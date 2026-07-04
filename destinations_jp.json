@@ -1,0 +1,134 @@
+{
+  "country": "JP",
+  "schema_version": 1,
+  "last_reviewed": "2026-06-28",
+  "note": "관광지 정보는 상황에 따라 변경될 수 있음. 방문 전 공식 사이트에서 운영 여부 재확인 권장.",
+  "cities": {
+    "tokyo": {
+      "name_ko": "도쿄",
+      "name_local": "東京",
+      "spots": [
+        {"name_ko": "센소지 (아사쿠사)", "name_local": "浅草寺", "category": "culture", "one_liner": "도쿄에서 가장 오래된 사찰과 나카미세 거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "센소지 아사쿠사"},
+        {"name_ko": "메이지 신궁", "name_local": "明治神宮", "category": "culture", "one_liner": "하라주쿠 옆 도심 속 숲과 신궁", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "메이지신궁 도쿄"},
+        {"name_ko": "도쿄 국립박물관 (우에노)", "name_local": "東京国立博物館", "category": "culture", "one_liner": "일본 최대 규모 박물관, 우에노 공원 내", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "도쿄국립박물관 우에노"},
+        {"name_ko": "시부야 스크램블 교차로", "name_local": "渋谷スクランブル交差点", "category": "culture", "one_liner": "세계에서 가장 붐비는 교차로, 시부야 스카이 전망대 인접", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "시부야 스크램블 교차로"},
+        {"name_ko": "츠키지 장외시장", "name_local": "築地場外市場", "category": "food", "one_liner": "해산물·초밥·달걀말이 노포가 밀집한 아침 시장", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "츠키지 장외시장"},
+        {"name_ko": "우에노 아메요코 시장", "name_local": "アメヤ横丁", "category": "food", "one_liner": "먹거리와 잡화가 뒤섞인 서민 시장", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "우에노 아메요코"},
+        {"name_ko": "신주쿠 오모이데요코초", "name_local": "思い出横丁", "category": "food", "one_liner": "좁은 골목의 야키토리·이자카야 밀집 구역", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-06-28", "search_query": "신주쿠 오모이데요코초"},
+        {"name_ko": "우에노 공원", "name_local": "上野公園", "category": "nature", "one_liner": "벚꽃 명소이자 박물관·동물원 밀집", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "우에노공원"},
+        {"name_ko": "신주쿠 교엔", "name_local": "新宿御苑", "category": "nature", "one_liner": "일본·영국·프랑스식 정원이 어우러진 도심 공원", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "신주쿠 교엔"},
+        {"name_ko": "긴자", "name_local": "銀座", "category": "shopping", "one_liner": "명품·백화점 밀집, 주말 보행자 천국", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "긴자 도쿄"},
+        {"name_ko": "하라주쿠·오모테산도", "name_local": "原宿・表参道", "category": "shopping", "one_liner": "스트리트 패션의 다케시타 거리와 명품 부티크의 오모테산도", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "하라주쿠 오모테산도"},
+        {"name_ko": "시부야", "name_local": "渋谷", "category": "shopping", "one_liner": "젊은층 타깃 대형 쇼핑몰과 편집숍 밀집", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "시부야 쇼핑"},
+        {"name_ko": "하코네 온천 (당일치기)", "name_local": "箱根温泉", "category": "onsen", "one_liner": "도쿄에서 신칸센 40분, 후지산 조망 가능한 온천 마을", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "하코네 온천"}
+      ]
+    },
+    "osaka": {
+      "name_ko": "오사카",
+      "name_local": "大阪",
+      "spots": [
+        {"name_ko": "오사카성", "name_local": "大阪城", "category": "culture", "one_liner": "도요토미 히데요시가 축조한 성, 벚꽃 명소", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "오사카성"},
+        {"name_ko": "스미요시 대사", "name_local": "住吉大社", "category": "culture", "one_liner": "1800년 역사의 신사, 신년 참배 명소", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "스미요시대사 오사카"},
+        {"name_ko": "우메다 스카이 빌딩", "name_local": "梅田スカイビル", "category": "culture", "one_liner": "공중정원 전망대에서 오사카 야경 조망", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "우메다 스카이빌딩"},
+        {"name_ko": "도톤보리", "name_local": "道頓堀", "category": "food", "one_liner": "타코야키·오코노미야키·글리코 간판의 대표 먹거리 거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "도톤보리 오사카"},
+        {"name_ko": "쿠로몬 시장", "name_local": "黒門市場", "category": "food", "one_liner": "'오사카의 부엌', 해산물·과일 노점", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "쿠로몬시장 오사카"},
+        {"name_ko": "신세카이·츠텐카쿠", "name_local": "新世界・通天閣", "category": "food", "one_liner": "쿠시카츠 발상지, 레트로 상점가", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "신세카이 츠텐카쿠"},
+        {"name_ko": "오사카성 공원", "name_local": "大阪城公園", "category": "nature", "one_liner": "벚꽃·매화 명소, 러닝·산책로", "best_season": ["spring"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "오사카성 공원"},
+        {"name_ko": "나카노시마 공원", "name_local": "中之島公園", "category": "nature", "one_liner": "도심 강변 공원, 장미원 유명", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "나카노시마공원 오사카"},
+        {"name_ko": "신사이바시스지 상점가", "name_local": "心斎橋筋商店街", "category": "shopping", "one_liner": "600m 아케이드, 패션·잡화 밀집", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "신사이바시 상점가"},
+        {"name_ko": "우메다 (한큐·한신 백화점)", "name_local": "梅田", "category": "shopping", "one_liner": "오사카 최대 쇼핑·터미널 밀집 구역", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "우메다 오사카"},
+        {"name_ko": "아리마 온천 (당일치기)", "name_local": "有馬温泉", "category": "onsen", "one_liner": "오사카에서 1시간, 일본 3대 온천 중 하나", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "아리마 온천"}
+      ]
+    },
+    "kyoto": {
+      "name_ko": "교토",
+      "name_local": "京都",
+      "spots": [
+        {"name_ko": "청수사 (기요미즈데라)", "name_local": "清水寺", "category": "culture", "one_liner": "교토 대표 사찰, 목조 무대와 시내 조망", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "청수사 교토"},
+        {"name_ko": "후시미 이나리 대사", "name_local": "伏見稲荷大社", "category": "culture", "one_liner": "붉은 도리이 터널 (센본토리이)", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "후시미 이나리"},
+        {"name_ko": "금각사 (킨카쿠지)", "name_local": "金閣寺", "category": "culture", "one_liner": "금박을 입힌 사리전과 정원", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "금각사 교토"},
+        {"name_ko": "기온 지구", "name_local": "祇園", "category": "culture", "one_liner": "게이샤 문화가 남은 전통 거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "기온 교토"},
+        {"name_ko": "니시키 시장", "name_local": "錦市場", "category": "food", "one_liner": "'교토의 부엌', 츠케모노·전통 먹거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "니시키시장 교토"},
+        {"name_ko": "폰토초 거리", "name_local": "先斗町", "category": "food", "one_liner": "가모가와 강변의 좁은 골목 요릿집 밀집", "best_season": ["spring", "summer"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "폰토초 교토"},
+        {"name_ko": "아라시야마 대나무숲", "name_local": "嵐山 竹林の道", "category": "nature", "one_liner": "대나무 터널 산책로, 도게츠교와 함께", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "아라시야마 대나무숲"},
+        {"name_ko": "철학의 길", "name_local": "哲学の道", "category": "nature", "one_liner": "은각사~난젠지 벚꽃길", "best_season": ["spring"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "철학의길 교토"},
+        {"name_ko": "카와라마치·시조", "name_local": "河原町・四条", "category": "shopping", "one_liner": "교토 최대 번화가, 백화점·아케이드", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "카와라마치 교토"},
+        {"name_ko": "쿠라마 온천 (당일치기)", "name_local": "鞍馬温泉", "category": "onsen", "one_liner": "교토 시내에서 전차로 30분, 산속 노천탕", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "쿠라마 온천"}
+      ]
+    },
+    "fukuoka": {
+      "name_ko": "후쿠오카",
+      "name_local": "福岡",
+      "spots": [
+        {"name_ko": "다자이후 텐만구", "name_local": "太宰府天満宮", "category": "culture", "one_liner": "학문의 신을 모시는 신사, 매화 명소", "best_season": ["spring"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "다자이후 텐만구"},
+        {"name_ko": "쿠시다 신사", "name_local": "櫛田神社", "category": "culture", "one_liner": "하카타 야마카사 마츠리의 중심 신사", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "쿠시다신사 후쿠오카"},
+        {"name_ko": "후쿠오카 타워", "name_local": "福岡タワー", "category": "culture", "one_liner": "234m 해변 전망 타워, 야경 명소", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "후쿠오카 타워"},
+        {"name_ko": "나카스 포장마차 (야타이)", "name_local": "中洲屋台", "category": "food", "one_liner": "강변 노천 포장마차 거리, 하카타 라멘·모츠나베", "best_season": ["spring", "summer", "autumn"], "stability": "popular", "status": "active", "verified_date": "2026-06-28", "search_query": "나카스 야타이 후쿠오카"},
+        {"name_ko": "야나가와 뱃놀이 (당일치기)", "name_local": "柳川 川下り", "category": "food", "one_liner": "수로 뱃놀이와 장어 요리(우나기 세이로무시)", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "야나가와 뱃놀이"},
+        {"name_ko": "오호리 공원", "name_local": "大濠公園", "category": "nature", "one_liner": "도심 호수 공원, 러닝·보트", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "오호리공원 후쿠오카"},
+        {"name_ko": "우미노나카미치 해변 공원", "name_local": "海の中道海浜公園", "category": "nature", "one_liner": "계절 꽃밭과 자전거 코스", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "우미노나카미치 공원"},
+        {"name_ko": "캐널시티 하카타", "name_local": "キャナルシティ博多", "category": "shopping", "one_liner": "수로가 흐르는 복합 쇼핑몰", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "캐널시티 하카타"},
+        {"name_ko": "텐진 지하상가", "name_local": "天神地下街", "category": "shopping", "one_liner": "유럽풍 아케이드, 후쿠오카 최대 지하상권", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "텐진 지하상가"},
+        {"name_ko": "유후인 온천 (당일치기)", "name_local": "由布院温泉", "category": "onsen", "one_liner": "후쿠오카에서 2시간, 유후다케 배경 온천 마을", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "유후인 온천"},
+        {"name_ko": "벳푸 온천 (당일치기)", "name_local": "別府温泉", "category": "onsen", "one_liner": "'지옥순례'로 유명한 온천 도시", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "벳푸 온천"}
+      ]
+    },
+    "sapporo": {
+      "name_ko": "삿포로",
+      "name_local": "札幌",
+      "spots": [
+        {"name_ko": "삿포로 시계탑", "name_local": "札幌市時計台", "category": "culture", "one_liner": "1878년 건립, 삿포로의 상징", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "삿포로 시계탑"},
+        {"name_ko": "오도리 공원", "name_local": "大通公園", "category": "culture", "one_liner": "삿포로 눈축제 등 사계절 이벤트 중심지", "best_season": ["winter", "summer"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "오도리공원 삿포로"},
+        {"name_ko": "홋카이도청 구본청사 (붉은벽돌)", "name_local": "北海道庁旧本庁舎", "category": "culture", "one_liner": "메이지 시대 붉은 벽돌 건축물", "best_season": ["all"], "stability": "landmark", "status": "under_renovation", "verified_date": "2026-06-28", "search_query": "홋카이도청 붉은벽돌 삿포로"},
+        {"name_ko": "니조 시장", "name_local": "二条市場", "category": "food", "one_liner": "홋카이도 해산물 아침 시장, 카이센동 유명", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "니조시장 삿포로"},
+        {"name_ko": "삿포로 라멘 요코초", "name_local": "元祖さっぽろラーメン横丁", "category": "food", "one_liner": "미소라멘 발상지 스스키노 골목", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-06-28", "search_query": "삿포로 라멘 요코초"},
+        {"name_ko": "삿포로 맥주 박물관", "name_local": "サッポロビール博物館", "category": "food", "one_liner": "일본 유일 맥주 박물관, 시음 가능", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "삿포로 맥주박물관"},
+        {"name_ko": "모이와산 전망대", "name_local": "藻岩山展望台", "category": "nature", "one_liner": "삿포로 야경 3대 명소", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "모이와산 삿포로"},
+        {"name_ko": "다키노스즈란 구릉공원", "name_local": "国営滝野すずらん丘陵公園", "category": "nature", "one_liner": "여름 꽃밭·겨울 스노슈, 사계절 공원", "best_season": ["summer", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "다키노스즈란 공원"},
+        {"name_ko": "타누키코지 상점가", "name_local": "狸小路商店街", "category": "shopping", "one_liner": "삿포로 최대 아케이드, 약 900m", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "타누키코지 삿포로"},
+        {"name_ko": "노보리베츠 온천 (당일치기)", "name_local": "登別温泉", "category": "onsen", "one_liner": "홋카이도 대표 온천, '지옥계곡' 지대", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "노보리베츠 온천"},
+        {"name_ko": "조잔케이 온천 (당일치기)", "name_local": "定山渓温泉", "category": "onsen", "one_liner": "삿포로에서 1시간, 계곡 온천 마을", "best_season": ["autumn", "winter"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "조잔케이 온천"}
+      ]
+    },
+    "okinawa": {
+      "name_ko": "오키나와",
+      "name_local": "沖縄",
+      "spots": [
+        {"name_ko": "슈리성", "name_local": "首里城", "category": "culture", "one_liner": "류큐 왕국 왕궁 (2019년 화재 후 정전 재건 중)", "best_season": ["all"], "stability": "landmark", "status": "under_renovation", "verified_date": "2026-06-28", "search_query": "슈리성 오키나와"},
+        {"name_ko": "츄라우미 수족관", "name_local": "美ら海水族館", "category": "culture", "one_liner": "세계 최대급 수조와 고래상어", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "츄라우미 수족관"},
+        {"name_ko": "국제거리 (코쿠사이도리)", "name_local": "国際通り", "category": "food", "one_liner": "나하 중심 1.6km 관광 거리, 오키나와 요리 밀집", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "국제거리 오키나와"},
+        {"name_ko": "마키시 공설시장", "name_local": "牧志公設市場", "category": "food", "one_liner": "열대 해산물·고야참프루 등 향토 요리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "마키시 공설시장"},
+        {"name_ko": "고우리 대교·고우리 섬", "name_local": "古宇利大橋・古宇利島", "category": "nature", "one_liner": "에메랄드빛 바다를 가로지르는 2km 다리", "best_season": ["spring", "summer"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "고우리 대교 오키나와"},
+        {"name_ko": "만자모 해안 절벽", "name_local": "万座毛", "category": "nature", "one_liner": "코끼리 모양 기암과 산호초 바다", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "만자모 오키나와"},
+        {"name_ko": "케라마 제도 (당일치기)", "name_local": "慶良間諸島", "category": "nature", "one_liner": "'케라마 블루' 다이빙·스노클링 명소", "best_season": ["spring", "summer"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "케라마 제도"},
+        {"name_ko": "아메리칸 빌리지 (차탄)", "name_local": "アメリカンビレッジ", "category": "shopping", "one_liner": "미군기지 인근 서프·복합 쇼핑 구역", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-06-28", "search_query": "아메리칸 빌리지 오키나와"},
+        {"name_ko": "류진노유 온천 (세나가지마)", "name_local": "琉球温泉 瀬長島ホテル", "category": "onsen", "one_liner": "나하 공항 근처, 활주로·바다 조망 온천", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-06-28", "search_query": "세나가지마 온천 오키나와"}
+      ]
+    },
+    "hiroshima": {
+      "name_ko": "히로시마",
+      "name_local": "広島",
+      "spots": [
+        {"name_ko": "평화기념공원·원폭돔", "name_local": "平和記念公園・原爆ドーム", "category": "culture", "one_liner": "유네스코 세계유산, 평화기념자료관 함께", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "평화기념공원 히로시마"},
+        {"name_ko": "이츠쿠시마 신사 (미야지마)", "name_local": "厳島神社", "category": "culture", "one_liner": "바다 위 붉은 도리이, 유네스코 세계유산", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "이츠쿠시마 신사 미야지마"},
+        {"name_ko": "히로시마성", "name_local": "広島城", "category": "culture", "one_liner": "'잉어성'이라 불리는 재건 천수각", "best_season": ["spring"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "히로시마성"},
+        {"name_ko": "오코노미무라", "name_local": "お好み村", "category": "food", "one_liner": "히로시마식 오코노미야키 노포 20여 곳 집결", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "오코노미무라 히로시마"},
+        {"name_ko": "미야지마 상점가", "name_local": "宮島表参道商店街", "category": "food", "one_liner": "굴 요리·모미지 만주 명물", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "미야지마 상점가"},
+        {"name_ko": "슈케이엔", "name_local": "縮景園", "category": "nature", "one_liner": "1620년 조성 회유식 정원", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "슈케이엔 히로시마"},
+        {"name_ko": "혼도리 상점가", "name_local": "本通商店街", "category": "shopping", "one_liner": "히로시마 최대 아케이드 쇼핑 거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "혼도리 상점가 히로시마"}
+      ]
+    },
+    "nara": {
+      "name_ko": "나라",
+      "name_local": "奈良",
+      "spots": [
+        {"name_ko": "도다이지 (동대사)", "name_local": "東大寺", "category": "culture", "one_liner": "세계 최대급 목조 건축, 대불 안치", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "도다이지 나라"},
+        {"name_ko": "가스가타이샤", "name_local": "春日大社", "category": "culture", "one_liner": "3000개 석등롱, 유네스코 세계유산", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "가스가타이샤 나라"},
+        {"name_ko": "호류지", "name_local": "法隆寺", "category": "culture", "one_liner": "세계 최고(最古)의 목조 건축물", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "호류지 나라"},
+        {"name_ko": "나라마치", "name_local": "ならまち", "category": "food", "one_liner": "옛 상가 골목, 카페·전통 과자점", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "나라마치"},
+        {"name_ko": "나라 공원 (사슴 공원)", "name_local": "奈良公園", "category": "nature", "one_liner": "1200여 마리 사슴이 뛰노는 공원", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "나라공원 사슴"},
+        {"name_ko": "요시노야마 (당일치기)", "name_local": "吉野山", "category": "nature", "one_liner": "3만 그루 벚꽃 명소, 봄철 절경", "best_season": ["spring"], "stability": "landmark", "status": "active", "verified_date": "2026-06-28", "search_query": "요시노야마 벚꽃"}
+      ]
+    }
+  }
+}

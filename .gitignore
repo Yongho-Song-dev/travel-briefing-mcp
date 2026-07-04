@@ -1,0 +1,15 @@
+# connfig 파일
+.env
+.env.local
+.env.production
+*.key
+*.pem
+
+
+
+*.zip
+
+
+/info
+
+CLAUDE.md
