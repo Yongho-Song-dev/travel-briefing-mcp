@@ -1,15 +1,21 @@
-# connfig 파일
+# 환경변수 / 시크릿
 .env
 .env.local
 .env.production
 *.key
 *.pem
 
+# uv / Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
 
-
+# 기타
 *.zip
+*:Zone.Identifier
 
-
+# Claude Code (로컬 전용)
 /info
-
 CLAUDE.md
+.claude/*

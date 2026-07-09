@@ -38,6 +38,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional, Any
 from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
+import html
 import threading
 import time
 import json
@@ -47,6 +48,13 @@ import logging
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+# 로컬 개발용 .env 자동 로드 (배포 환경에선 무시됨)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 logger = logging.getLogger("travel-briefing")
 mcp = FastMCP("travel-briefing")
 
@@ -54,9 +62,9 @@ SupportedCountry = Literal["JP"]  # v1: 일본만 지원. v2 에서 확장.
 
 _READONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
 
-# 외부 API 엔드포인트 (환경변수로 오버라이드 가능하도록 함수 내부에서 os.getenv 사용)
+# 외부 API 엔드포인트
 _MOFA_VISA_URL = "https://apis.data.go.kr/1262000/EntranceVisaService2/getEntranceVisaList2"
-_MOFA_ALERT_URL = "https://apis.data.go.kr/1262000/TravelAlarmService/getTravelAlarmList"
+_MOFA_WARN_URL = "https://apis.data.go.kr/1262000/TravelWarningServiceV3/getTravelWarningListV3"
 _KOREAEXIM_URL = "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON"
 
 # HTTP 호출 타임아웃(가이드 p99 3,000ms 요건 대비 여유)
@@ -126,11 +134,15 @@ _SEASON_RULES: dict[str, list[tuple[int, int, str, str]]] = {
            (10, 4, "off", "우기, 가격 저렴")],
 }
 
-# 국가 코드 → 외교부 API 국가 코드 매핑
-# 외교부 API 는 자체 국가코드를 쓰므로 ISO 2자리와 별도 매핑 필요.
-# TODO: 실제 응답 확인 후 값 정확히 채우기 (JP 는 통상 'JPN' 또는 '392' 로 확인됨).
+# 국가 코드 → 외교부 TravelWarningServiceV3 iso_code 매핑 (실측 확인 완료)
 _MOFA_COUNTRY_CODE: dict[str, str] = {
-    "JP": "JPN",  # 응답 필드명에 따라 조정 필요
+    "JP": "JPN",
+    "VN": "VNM",
+    "TH": "THA",
+    "PH": "PHL",
+    "SG": "SGP",
+    "MY": "MYS",
+    "ID": "IDN",
 }
 
 
@@ -190,11 +202,11 @@ _cache = _TTLCache()
 # 환경변수로 오버라이드 가능 (테스트/로컬 개발 시 로컬 파일 사용).
 _EMBASSY_JSON_URL = os.getenv(
     "TB_EMBASSY_JSON_URL",
-    "https://raw.githubusercontent.com/<org>/<repo>/main/embassies.json",
+    "https://raw.githubusercontent.com/Yongho-Song-dev/travel-briefing-mcp/main/embassies.json",
 )
 _DESTINATIONS_JP_URL = os.getenv(
     "TB_DESTINATIONS_JP_URL",
-    "https://raw.githubusercontent.com/<org>/<repo>/main/destinations_jp.json",
+    "https://raw.githubusercontent.com/Yongho-Song-dev/travel-briefing-mcp/main/destinations_jp.json",
 )
 _embassy_data: dict[str, dict] = {}
 _embassy_loaded_at: float = 0.0
@@ -208,19 +220,24 @@ _refresh_lock = threading.Lock()
 def _fetch_github_json(url: str) -> Optional[dict]:
     """
     - GitHub Raw 등 공개 JSON URL을 조회해 dict 로 반환하는 내부 함수
+      file:// URL은 로컬 파일로 직접 읽는다 (로컬 개발용).
       실패 시 None 반환(호출자가 기존 캐시 유지하도록 함).
     ### Args:
-      - url(str): 조회 대상 JSON URL
+      - url(str): 조회 대상 JSON URL (http/https 또는 file://)
     ### Returns:
       - data(Optional[dict]): 파싱된 JSON 또는 실패 시 None
     """
     try:
+        if url.startswith("file://"):
+            path = url[7:]
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
         with httpx.Client(timeout=_HTTP_TIMEOUT_S) as client:
             resp = client.get(url)
             resp.raise_for_status()
             return resp.json()
     except Exception as exc:  # noqa: BLE001 (가용성 우선, 로깅만)
-        logger.warning("GitHub JSON fetch 실패 (%s): %s", url, exc)
+        logger.warning("JSON fetch 실패 (%s): %s", url, exc)
         return None
 
 
@@ -361,61 +378,119 @@ def _parse_visa_days(item: dict) -> Optional[int]:
     return int(m.group(1)) if m else None
 
 
+_MOFA_WARN_ALL_KEY = "mofa_warn_all"  # 전국가 목록 캐시 키
+
+
+def _fetch_mofa_warn_all() -> Optional[dict]:
+    """
+    - TravelWarningServiceV3 전국가 목록을 가져와 iso_code 키 dict 로 캐싱하는 함수 (TTL 1h)
+      197개국을 한 번에 반환하므로 국가별 호출 대신 전체를 캐시하고 필터링.
+    ### Args:
+      - None
+    ### Returns:
+      - data(Optional[dict]): {iso_code: item} 또는 실패 시 None
+    """
+    cached = _cache.get(_MOFA_WARN_ALL_KEY)
+    if cached is not None:
+        return cached
+
+    api_key = os.getenv("MOFA_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        with httpx.Client(timeout=_HTTP_TIMEOUT_S) as client:
+            resp = client.get(
+                _MOFA_WARN_URL,
+                params={"serviceKey": api_key, "returnType": "JSON", "numOfRows": "250", "pageNo": "1"},
+            )
+            resp.raise_for_status()
+            items = resp.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("MOFA V3 전국가 목록 조회 실패: %s", exc)
+        return None
+
+    by_iso = {x["iso_code"]: x for x in items if x.get("iso_code")}
+    _cache.set(_MOFA_WARN_ALL_KEY, by_iso, _MOFA_ALERT_TTL_S)
+    return by_iso
+
+
 def _fetch_mofa_alert(country: str) -> dict:
     """
-    - 외교부 여행경보 API 에서 국가별 현재 경보 단계와 발효일을 조회하는 함수 (TTL 1h)
+    - 외교부 여행경보 V3 API 에서 국가별 경보 단계·지역노트를 조회하는 함수 (TTL 1h)
+      전국가 목록을 한 번 호출해 캐시 후 iso_code 로 필터링.
     ### Args:
       - country(str): 국가 코드
     ### Returns:
       - data(dict): {'level': 0~4, 'level_name': str, 'issued_at': str, 'note': str}
-                    실패 시 {'level': 0, ...} (미발령 취급)
     """
     cache_key = f"mofa_alert:{country}"
     cached = _cache.get(cache_key)
     if cached is not None:
         return cached
 
-    api_key = os.getenv("MOFA_API_KEY")
-    if not api_key:
+    if not os.getenv("MOFA_API_KEY"):
         return {"level": 0, "level_name": "정보 없음", "issued_at": "-", "note": "API 키 미설정"}
 
-    params = {
-        "serviceKey": api_key,
-        "returnType": "JSON",
-        "numOfRows": "50",
-        "pageNo": "1",
-        "countryNm": _STATIC[country]["name_en"],
-    }
-    try:
-        with httpx.Client(timeout=_HTTP_TIMEOUT_S) as client:
-            resp = client.get(_MOFA_ALERT_URL, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("MOFA 여행경보 API 실패 (%s): %s", country, exc)
+    all_data = _fetch_mofa_warn_all()
+    if all_data is None:
         return {"level": 0, "level_name": "조회 실패", "issued_at": "-", "note": "출발 전 0404.go.kr 재확인"}
 
-    try:
-        items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
-        if isinstance(items, dict):
-            items = [items]
-        if not items:
-            result = {"level": 0, "level_name": "미발령", "issued_at": "-", "note": "여행경보 미지정"}
-        else:
-            first = items[0]
-            # 실제 필드명: alarmLvl(경보단계), alarmLvlNm, sfeAdvcCn 등 응답 확인 후 조정
-            level = int(first.get("alarmLvl", 0) or 0)
-            result = {
-                "level": level,
-                "level_name": _LEVEL_NAME.get(level, "정보 없음"),
-                "issued_at": first.get("wrtDt", "-"),
-                "note": first.get("sfeAdvcCn", "") or first.get("enSmryCn", "") or "-",
-            }
-        _cache.set(cache_key, result, _MOFA_ALERT_TTL_S)
-        return result
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("MOFA 여행경보 응답 파싱 실패: %s", exc)
-        return {"level": 0, "level_name": "파싱 실패", "issued_at": "-", "note": "-"}
+    iso = _MOFA_COUNTRY_CODE.get(country)
+    item = all_data.get(iso) if iso else None
+
+    result = _parse_warning_item(item) if item else {
+        "level": 0, "level_name": "미발령", "issued_at": "-", "note": "-",
+    }
+    _cache.set(cache_key, result, _MOFA_ALERT_TTL_S)
+    return result
+
+
+def _parse_warning_item(item: dict) -> dict:
+    """
+    - V3 경보 항목에서 최고 레벨과 지역 노트를 추출하는 함수
+      ban(4) > limita(3) > control(2) > attention(1) 순서로 전국 레벨 결정.
+      *_partial 필드는 레벨에 반영하지 않고 노트에만 포함.
+    ### Args:
+      - item(dict): TravelWarningServiceV3 응답의 개별 국가 항목
+    ### Returns:
+      - result(dict): {'level': int, 'level_name': str, 'issued_at': str, 'note': str}
+    """
+    level = 0
+    notes: list[str] = []
+
+    checks = [
+        ("ban_yna",        "ban_note",     4, "여행금지"),
+        ("ban_yn_partial", "ban_note",     4, "여행금지(일부)"),
+        ("limita",         "limita_note",  3, "출국권고"),
+        ("limita_partial", "limita_note",  0, "출국권고(일부)"),   # 전국 레벨 미반영
+        ("control",        "control_note", 2, "여행자제"),
+        ("control_partial","control_note", 0, "여행자제(일부)"),
+        ("attention",      "attention_note", 1, "여행유의"),
+        ("attention_partial","attention_note", 0, "여행유의(일부)"),
+    ]
+    for field, note_field, lvl, label in checks:
+        if item.get(field):
+            level = max(level, lvl)
+            raw = item.get(note_field) or item.get(field) or ""
+            # 공공데이터포털 응답이 이중 HTML 이스케이프인 경우를 처리
+            region = raw
+            for _ in range(2):
+                unescaped = html.unescape(region)
+                if unescaped == region:
+                    break
+                region = unescaped
+            if region and region != label:
+                notes.append(f"{label}: {region}")
+            else:
+                notes.append(label)
+
+    return {
+        "level": level,
+        "level_name": _LEVEL_NAME.get(level, "정보 없음"),
+        "issued_at": item.get("wrt_dt") or "-",
+        "note": " / ".join(notes) if notes else "-",
+    }
 
 
 _LEVEL_NAME = {0: "미발령", 1: "여행유의", 2: "여행자제", 3: "출국권고", 4: "여행금지"}
@@ -425,6 +500,7 @@ _LEVEL_NAME = {0: "미발령", 1: "여행유의", 2: "여행자제", 3: "출국�
 # 4-1) 수출입은행 환율 API (TTL 24h)
 # ===========================================================================
 _EXCHANGE_TTL_S = 24 * 3600
+_last_known_exch: dict[str, dict] = {}  # TTL 만료 후 주말·공휴일 폴백용 영구 저장
 
 
 def _fetch_exchange_rate(currency: str) -> Optional[dict]:
@@ -457,7 +533,12 @@ def _fetch_exchange_rate(currency: str) -> Optional[dict]:
         return None
 
     # 응답은 리스트, 각 원소가 통화별 환율. cur_unit 이 'JPY(100)' 형태.
-    if not isinstance(rows, list):
+    # 주말·공휴일은 빈 배열 반환 → 마지막 유효값 폴백
+    if not isinstance(rows, list) or not rows:
+        if currency in _last_known_exch:
+            stale = dict(_last_known_exch[currency])
+            stale["is_stale"] = True
+            return stale
         return None
     for row in rows:
         if row.get("cur_unit", "").startswith(currency):
@@ -468,8 +549,10 @@ def _fetch_exchange_rate(currency: str) -> Optional[dict]:
                     "deal_bas_r": float(deal),
                     "search_date": datetime.now().strftime("%Y-%m-%d"),
                     "cur_nm": row.get("cur_nm", "-"),
+                    "is_stale": False,
                 }
                 _cache.set(cache_key, result, _EXCHANGE_TTL_S)
+                _last_known_exch[currency] = result  # 주말 폴백용 영구 보존
                 return result
             except (ValueError, KeyError):
                 return None
@@ -757,9 +840,14 @@ def _render_exchange_md(static: dict, result: Optional[dict]) -> str:
     header = f"# {static['name_ko']} 환율\n"
     if not result:
         return header + "\n> 환율 조회 실패. 잠시 후 다시 시도해주세요."
+    stale_note = (
+        "\n> ⚠️ 주말·공휴일로 API 갱신 불가 — 직전 영업일 기준 환율입니다."
+        if result.get("is_stale") else ""
+    )
     return (
         f"{header}\n"
-        f"**{result['currency']}** = **{result['deal_bas_r']:,.2f} 원** (매매기준율, {result['search_date']} 기준)\n\n"
+        f"**{result['currency']}** = **{result['deal_bas_r']:,.2f} 원** (매매기준율, {result['search_date']} 기준)\n"
+        f"{stale_note}\n"
         f"> 실거래 환율은 은행·환전소별로 상이. 참고용."
     )
 

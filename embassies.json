@@ -1,0 +1,88 @@
+{
+  "last_reviewed": "2026-07-04",
+  "note": "한국 대사관 공식 연락처. 변경 시 PR로 수정. 출처: 외교부 재외공관(https://www.mofa.go.kr)",
+  "countries": {
+    "JP": {
+      "name_ko": "일본",
+      "embassy_name": "주일본 대한민국 대사관",
+      "address": "〒106-0047 東京都港区南麻布1-2-5",
+      "address_ko": "도쿄도 미나토구 미나미아자부 1-2-5",
+      "phone": "+81-3-3452-7611",
+      "emergency": "+81-3-3452-7611",
+      "url": "https://overseas.mofa.go.kr/jp-ko/index.do",
+      "consulates": [
+        {"city": "오사카", "phone": "+81-6-4256-2345"},
+        {"city": "후쿠오카", "phone": "+81-92-771-0461"},
+        {"city": "삿포로", "phone": "+81-11-218-0288"},
+        {"city": "나고야", "phone": "+81-52-586-9287"},
+        {"city": "센다이", "phone": "+81-22-221-2751"}
+      ]
+    },
+    "VN": {
+      "name_ko": "베트남",
+      "embassy_name": "주베트남 대한민국 대사관",
+      "address": "28 Trần Huy Liệu, Ngọc Khánh, Ba Đình, Hà Nội",
+      "address_ko": "하노이 바딘구 응옥칸 쩐휴리에우 28",
+      "phone": "+84-24-3831-5110",
+      "emergency": "+84-24-3831-5110",
+      "url": "https://overseas.mofa.go.kr/vn-ko/index.do",
+      "consulates": [
+        {"city": "호치민", "phone": "+84-28-3822-5757"}
+      ]
+    },
+    "TH": {
+      "name_ko": "태국",
+      "embassy_name": "주태국 대한민국 대사관",
+      "address": "23 Thiam-Ruam-Mit Road, Huaykwang, Bangkok 10310",
+      "address_ko": "방콕 화이쾅 티암루암밋 로드 23",
+      "phone": "+66-2-247-7537",
+      "emergency": "+66-2-247-7537",
+      "url": "https://overseas.mofa.go.kr/th-ko/index.do",
+      "consulates": []
+    },
+    "PH": {
+      "name_ko": "필리핀",
+      "embassy_name": "주필리핀 대한민국 대사관",
+      "address": "122 Upper McKinley Road, McKinley Town Center, Fort Bonifacio, Taguig City",
+      "address_ko": "따기그시 포트보니파시오 맥킨리타운센터 어퍼맥킨리로드 122",
+      "phone": "+63-2-8811-6139",
+      "emergency": "+63-2-8811-6139",
+      "url": "https://overseas.mofa.go.kr/ph-ko/index.do",
+      "consulates": [
+        {"city": "세부", "phone": "+63-32-253-2626"}
+      ]
+    },
+    "SG": {
+      "name_ko": "싱가포르",
+      "embassy_name": "주싱가포르 대한민국 대사관",
+      "address": "47 Scotts Road, Goldbell Towers #08-00, Singapore 228233",
+      "address_ko": "싱가포르 스콧츠로드 47 골드벨 타워 8층",
+      "phone": "+65-6256-1188",
+      "emergency": "+65-6256-1188",
+      "url": "https://overseas.mofa.go.kr/sg-ko/index.do",
+      "consulates": []
+    },
+    "MY": {
+      "name_ko": "말레이시아",
+      "embassy_name": "주말레이시아 대한민국 대사관",
+      "address": "9 & 11, Jalan Nipah, Off Jalan Ampang, 55000 Kuala Lumpur",
+      "address_ko": "쿠알라룸푸르 잘란암팡 인근 잘란니파 9 & 11",
+      "phone": "+60-3-4251-2336",
+      "emergency": "+60-3-4251-2336",
+      "url": "https://overseas.mofa.go.kr/my-ko/index.do",
+      "consulates": []
+    },
+    "ID": {
+      "name_ko": "인도네시아",
+      "embassy_name": "주인도네시아 대한민국 대사관",
+      "address": "Jl. Jend. Gatot Subroto Kav. 57, Jakarta Selatan 12950",
+      "address_ko": "자카르타 남부 가톳수브로토 57",
+      "phone": "+62-21-2967-2555",
+      "emergency": "+62-21-2967-2555",
+      "url": "https://overseas.mofa.go.kr/id-ko/index.do",
+      "consulates": [
+        {"city": "발리", "phone": "+62-361-227-017"}
+      ]
+    }
+  }
+}
