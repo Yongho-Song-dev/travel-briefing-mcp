@@ -39,6 +39,7 @@ from typing import Literal, Optional, Any
 from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
 import html
+import re
 import threading
 import time
 import json
@@ -63,9 +64,10 @@ SupportedCountry = Literal["JP"]  # v1: 일본만 지원. v2 에서 확장.
 _READONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
 
 # 외부 API 엔드포인트
-_MOFA_VISA_URL = "https://apis.data.go.kr/1262000/EntranceVisaService2/getEntranceVisaList2"
-_MOFA_WARN_URL = "https://apis.data.go.kr/1262000/TravelWarningServiceV3/getTravelWarningListV3"
-_KOREAEXIM_URL = "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON"
+_MOFA_VISA_URL  = "https://apis.data.go.kr/1262000/EntranceVisaService2/getEntranceVisaList2"
+_MOFA_WARN_URL  = "https://apis.data.go.kr/1262000/TravelWarningServiceV3/getTravelWarningListV3"
+_KOREAEXIM_URL  = "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON"
+_NAVER_BLOG_URL = "https://openapi.naver.com/v1/search/blog"
 
 # HTTP 호출 타임아웃(가이드 p99 3,000ms 요건 대비 여유)
 _HTTP_TIMEOUT_S = 2.5
@@ -132,6 +134,14 @@ _SEASON_RULES: dict[str, list[tuple[int, int, str, str]]] = {
            (6, 8, "shoulder", "동·서해안 우기 엇갈림")],
     "ID": [(5, 9, "peak", "발리 건기 성수기"),
            (10, 4, "off", "우기, 가격 저렴")],
+}
+
+# 여행 목적 한국어 레이블
+_PURPOSE_KO: dict[str, str] = {
+    "family":  "가족여행",
+    "couple":  "커플여행",
+    "friends": "친구여행",
+    "solo":    "혼자여행",
 }
 
 # 국가 코드 → 외교부 TravelWarningServiceV3 iso_code 매핑 (실측 확인 완료)
@@ -291,13 +301,15 @@ _MOFA_VISA_TTL_S = 6 * 3600     # 비자 정보는 자주 안 바뀜
 _MOFA_ALERT_TTL_S = 1 * 3600    # 여행경보는 상황 변동성 있음
 
 
+_MOFA_VISA_ALL_KEY = "mofa_visa_all"  # 전국가 비자 목록 캐시 키
+
+
 def _fetch_mofa_visa(country: str) -> dict:
     """
-    - 외교부 해외안전여행 API에서 비자 / 여행경보 / 안전공지를 함께 조회하는 함수
-      (한 번 호출로 3종 정보를 묶어 가져와 호출 횟수를 최소화)
-      비자는 TTL 6h, 경보·공지는 TTL 1h로 별도 캐싱.
+    - 외교부 입국허가요건 API 전체 목록을 캐시 후 country_iso_alp2 로 필터링하는 함수 (TTL 6h)
+      countryNm 파라미터가 필터 역할을 하지 않아 전체(약 190개국) 조회 후 직접 필터링.
     ### Args:
-      - country(str): 국가 코드
+      - country(str): 국가 코드 (예: 'JP')
     ### Returns:
       - data(dict): {'visa': {...}} 형태, 실패 시 빈 dict
     """
@@ -311,35 +323,35 @@ def _fetch_mofa_visa(country: str) -> dict:
         logger.warning("MOFA_API_KEY 환경변수 미설정 — 정적 폴백 사용")
         return {}
 
-    params = {
-        "serviceKey": api_key,
-        "returnType": "JSON",
-        "numOfRows": "10",
-        "pageNo": "1",
-        "countryNm": _STATIC[country]["name_en"],  # 응답 필드에 따라 조정 필요
-    }
-    try:
-        with httpx.Client(timeout=_HTTP_TIMEOUT_S) as client:
-            resp = client.get(_MOFA_VISA_URL, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("MOFA 비자 API 실패 (%s): %s", country, exc)
+    # 전국가 목록 캐시 확인 (여러 국가 조회 시 API 중복 호출 방지)
+    all_items = _cache.get(_MOFA_VISA_ALL_KEY)
+    if all_items is None:
+        try:
+            with httpx.Client(timeout=_HTTP_TIMEOUT_S) as client:
+                resp = client.get(
+                    _MOFA_VISA_URL,
+                    params={"serviceKey": api_key, "returnType": "JSON", "numOfRows": "300", "pageNo": "1"},
+                )
+                resp.raise_for_status()
+                raw = resp.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
+                if isinstance(raw, dict):
+                    raw = [raw]
+                all_items = {x["country_iso_alp2"]: x for x in raw if x.get("country_iso_alp2")}
+                _cache.set(_MOFA_VISA_ALL_KEY, all_items, _MOFA_VISA_TTL_S)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("MOFA 비자 API 실패: %s", exc)
+            return {}
+
+    item = all_items.get(country)
+    if not item:
         return {}
 
-    # 응답 스키마 매핑 (실제 응답 확인 후 필드명 조정 필요)
-    # data['response']['body']['items']['item'] 형태 가정
     try:
-        items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
-        if isinstance(items, dict):
-            items = [items]
-        if not items:
-            return {}
-        first = items[0]
+        raw_note = item.get("nvisa_entry_evdc_cn") or item.get("gnrl_pspt_visa_cn") or "-"
         visa = {
-            "required": _parse_visa_required(first),
-            "duration_days": _parse_visa_days(first),
-            "note": first.get("enTrgtRmrk") or first.get("enSmryCn") or "-",
+            "required": _parse_visa_required(item),
+            "duration_days": _parse_visa_days(item),
+            "note": raw_note.replace("\\n", " / ").strip(),
         }
         result = {"visa": visa}
         _cache.set(cache_key, result, _MOFA_VISA_TTL_S)
@@ -351,29 +363,26 @@ def _fetch_mofa_visa(country: str) -> dict:
 
 def _parse_visa_required(item: dict) -> bool:
     """
-    - MOFA 응답 항목에서 비자 필요 여부를 추론하는 함수(실제 필드 확인 후 로직 정교화)
+    - MOFA 응답 항목에서 비자 필요 여부를 판정하는 함수
+      gnrl_pspt_visa_yn = 'Y' 이면 일반여권 무비자 입국 가능 (required=False).
     ### Args:
-      - item(dict): MOFA API 응답의 개별 항목
+      - item(dict): MOFA 입국허가요건 API 응답 항목
     ### Returns:
       - required(bool): 비자 필요 여부. 판단 불가 시 True (안전한 쪽)
     """
-    # 무비자 관련 필드가 있으면 우선 참조. 예: entaCn(입국가능기간 문자열)
-    text = " ".join(str(v) for v in item.values() if v).lower()
-    if "무비자" in text or "visa-free" in text or "visa free" in text:
-        return False
-    return True
+    return item.get("gnrl_pspt_visa_yn") != "Y"
 
 
 def _parse_visa_days(item: dict) -> Optional[int]:
     """
-    - MOFA 응답에서 무비자 체류 가능 일수를 추출하는 함수
+    - MOFA 응답에서 일반여권 무비자 체류 가능 일수를 추출하는 함수
+      gnrl_pspt_visa_cn 필드(예: '90일')에서 숫자를 파싱.
     ### Args:
-      - item(dict): MOFA API 응답의 개별 항목
+      - item(dict): MOFA 입국허가요건 API 응답 항목
     ### Returns:
       - days(Optional[int]): 체류 가능 일수. 없으면 None
     """
-    import re
-    text = " ".join(str(v) for v in item.values() if v)
+    text = item.get("gnrl_pspt_visa_cn", "")
     m = re.search(r"(\d{1,3})\s*일", text)
     return int(m.group(1)) if m else None
 
@@ -560,7 +569,60 @@ def _fetch_exchange_rate(currency: str) -> Optional[dict]:
 
 
 # ===========================================================================
-# 5) 툴 6개
+# 4-2) 네이버 블로그 검색 API (TTL 1h)
+# ===========================================================================
+_NAVER_BLOG_TTL_S = 1 * 3600
+
+
+def _fetch_naver_blog(query: str, display: int = 5) -> list[dict]:
+    """
+    - 네이버 블로그 검색 API 로 여행 후기를 검색하는 함수 (TTL 1h)
+      description 의 HTML 태그를 제거해 정제된 텍스트로 반환.
+    ### Args:
+      - query(str): 검색 쿼리
+      - display(int): 반환할 결과 수 (최대 10)
+    ### Returns:
+      - items(list[dict]): [{'title', 'link', 'description', 'bloggername'}] 형태
+    """
+    cache_key = f"naver_blog:{query}:{display}"
+    cached = _cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    client_id     = os.getenv("NAVER_CLIENT_ID", "").strip()
+    client_secret = os.getenv("NAVER_CLIENT_SECRET", "").strip()
+    if not client_id or not client_secret:
+        logger.warning("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 미설정")
+        return []
+
+    try:
+        with httpx.Client(timeout=_HTTP_TIMEOUT_S) as client:
+            resp = client.get(
+                _NAVER_BLOG_URL,
+                params={"query": query, "display": display, "sort": "sim"},
+                headers={"X-Naver-Client-Id": client_id, "X-Naver-Client-Secret": client_secret},
+            )
+            resp.raise_for_status()
+            items = resp.json().get("items", [])
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("네이버 블로그 검색 실패 (%s): %s", query, exc)
+        return []
+
+    cleaned = []
+    for it in items:
+        desc = re.sub(r"<[^>]+>", "", it.get("description", ""))
+        cleaned.append({
+            "title":       re.sub(r"<[^>]+>", "", it.get("title", "")),
+            "link":        it.get("link", ""),
+            "description": desc.strip(),
+            "bloggername": it.get("bloggername", ""),
+        })
+    _cache.set(cache_key, cleaned, _NAVER_BLOG_TTL_S)
+    return cleaned
+
+
+# ===========================================================================
+# 5) 툴 7개
 # ===========================================================================
 @mcp.tool(annotations={"title": "Trip Briefing", "openWorldHint": True, **_READONLY})
 def get_trip_briefing(country: SupportedCountry) -> str:
@@ -768,6 +830,50 @@ def compose_checklist(country: SupportedCountry, depart_date: str, return_date: 
     return "\n".join(lines)
 
 
+@mcp.tool(annotations={"title": "Itinerary Recommendation", "openWorldHint": True, **_READONLY})
+def recommend_itinerary(
+    country: SupportedCountry,
+    depart_date: str,
+    return_date: str,
+    budget_krw: int,
+    purpose: Literal["family", "couple", "friends", "solo"],
+    num_people: int,
+) -> str:
+    """
+    Recommends a personalized travel itinerary by searching real traveler blog
+    posts via the Naver Blog API from Travel Briefing(트래블 브리핑).
+    Results are based on actual trip reports matching the given schedule, budget,
+    purpose, and group size.
+
+    - 여행 조건(일정·예산·목적·인원)을 받아 네이버 블로그 후기 기반 맞춤 여행 추천을 반환하는 함수
+    ### Args:
+      - country(SupportedCountry): 국가 코드 ('JP')
+      - depart_date(str): 출국일 'YYYY-MM-DD'
+      - return_date(str): 귀국일 'YYYY-MM-DD'
+      - budget_krw(int): 1인당 예산 (원, 예: 800000)
+      - purpose(str): 여행 목적 'family'|'couple'|'friends'|'solo'
+      - num_people(int): 여행 인원 수
+    ### Returns:
+      - md(str): 조건 요약 + 블로그 추천 목록 마크다운 (상위 5건)
+    """
+    static = _STATIC[country]
+    try:
+        dep = datetime.strptime(depart_date, "%Y-%m-%d").date()
+        ret = datetime.strptime(return_date, "%Y-%m-%d").date()
+        nights = (ret - dep).days - 1
+        nights = max(nights, 1)
+    except ValueError:
+        nights = 3
+
+    purpose_ko  = _PURPOSE_KO.get(purpose, purpose)
+    budget_str  = f"{budget_krw // 10000}만원"
+    nights_str  = f"{nights}박{nights + 1}일"
+    query = f"{static['name_ko']} {nights_str} {purpose_ko} {num_people}명 예산 {budget_str} 여행 추천"
+
+    posts = _fetch_naver_blog(query, display=5)
+    return _render_itinerary_md(static, query, posts, depart_date, return_date, budget_str, purpose_ko, num_people, nights_str)
+
+
 # ===========================================================================
 # 6) 내부 헬퍼
 # ===========================================================================
@@ -973,6 +1079,49 @@ def _render_destinations_md(city_data: dict, spots: list[dict], category_filter:
 
     lines.append(f"> 큐레이션 데이터 최종 검토일: {_destinations_jp.get('last_reviewed', '-')}. "
                  f"방문 전 공식 사이트에서 운영 여부를 재확인하세요.")
+    return "\n".join(lines)
+
+
+def _render_itinerary_md(
+    static: dict, query: str, posts: list[dict],
+    depart: str, ret: str, budget_str: str,
+    purpose_ko: str, num_people: int, nights_str: str,
+) -> str:
+    """
+    - 네이버 블로그 검색 결과를 정제 마크다운으로 렌더링하는 함수
+    ### Args:
+      - static(dict): 국가 정적 정보
+      - query(str): 실제 검색에 사용된 쿼리
+      - posts(list[dict]): _fetch_naver_blog 결과
+      - 나머지: 조건 표시용
+    ### Returns:
+      - md(str): 조건 요약 + 블로그 후기 목록 마크다운
+    """
+    lines = [
+        f"# {static['name_ko']} 맞춤 여행 추천",
+        "",
+        f"**일정**: {depart} ~ {ret} ({nights_str})  "
+        f"**인원**: {num_people}명  "
+        f"**목적**: {purpose_ko}  "
+        f"**1인 예산**: {budget_str}",
+        "",
+    ]
+
+    if not posts:
+        lines.append("> 블로그 검색 결과가 없습니다. 네이버 API 키를 확인하거나 잠시 후 다시 시도해주세요.")
+        return "\n".join(lines)
+
+    lines.append("## 📝 실제 여행자 후기")
+    lines.append("")
+    for i, p in enumerate(posts, 1):
+        desc = p["description"][:120] + "…" if len(p["description"]) > 120 else p["description"]
+        lines.append(f"**{i}. [{p['title']}]({p['link']})**")
+        lines.append(f"- 블로거: {p['bloggername']}")
+        lines.append(f"- {desc}")
+        lines.append("")
+
+    lines.append(f"> 검색 쿼리: `{query}`")
+    lines.append("> 블로그 내용은 작성자 개인 경험 기준이며 실제와 다를 수 있습니다.")
     return "\n".join(lines)
 
 
