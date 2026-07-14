@@ -1,0 +1,19 @@
+# 저장소 줄바꿈은 LF 로 고정.
+# WSL(LF) 과 Windows 툴(CRLF) 을 오가며 편집할 때 내용 변경 없는 CRLF diff 가
+# 대량 발생하던 문제 방지 — 커밋 시 항상 LF 로 정규화한다.
+* text=auto eol=lf
+
+# 컨테이너 안에서 실행되는 스크립트·설정은 반드시 LF (CRLF 면 `/usr/bin/env: 'bash\r'` 오류)
+*.py       text eol=lf
+*.json     text eol=lf
+*.toml     text eol=lf
+*.md       text eol=lf
+*.sh       text eol=lf
+Dockerfile text eol=lf
+.env.example text eol=lf
+
+# 바이너리 — 줄바꿈 변환 금지
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary
