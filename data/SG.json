@@ -5,6 +5,7 @@
     "name_ko": "싱가포르",
     "name_en": "Singapore",
     "currency": "SGD",
+    "exch_unit": "SGD",
     "voltage": "230V",
     "plug": ["G"],
     "tz_offset_h": -1,
@@ -12,6 +13,11 @@
     "emergency": {"police": "999", "ambulance": "995"},
     "airport_iata": "SIN",
     "tipping": "팁 문화 없음(서비스 차지 포함)",
+    "travel_tips": [
+      "SG Arrival Card 출발 3일 이내 온라인 작성 필수",
+      "껌 반입·지하철 음식물 반입 금지 등 벌금 규정 엄격",
+      "물가 높음 — 호커센터(푸드코트) 활용하면 식비 절감"
+    ],
     "visa_static": {
       "required": false,
       "duration_days": 90,
@@ -23,6 +29,18 @@
     [6,  8, "peak",     "여름 휴가 성수기"],
     [2,  5, "shoulder", "가성비 좋은 시즌"]
   ],
-  "city_meta": {},
-  "filter_keywords": ["싱가포르", "singapore"]
+  "city_meta": {
+    "singapore": {
+      "name_ko": "싱가포르", "name_local": "Singapore",
+      "tags": ["마리나베이", "가든스바이더베이", "센토사", "미식"],
+      "best_for": ["family", "couple", "friends", "solo"],
+      "season_highlight": {"spring": "가든스 바이 더 베이", "summer": "센토사·유니버설",
+                           "autumn": "마리나베이 야경", "winter": "크리스마스 일루미네이션"}
+    }
+  },
+  "filter_keywords": [
+    "싱가포르", "마리나베이", "센토사", "가든스바이더베이", "차이나타운", "클락키",
+    "머라이언", "주얼창이", "호커센터",
+    "singapore", "sentosa", "marina bay"
+  ]
 }

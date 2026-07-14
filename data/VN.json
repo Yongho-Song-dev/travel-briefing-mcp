@@ -5,6 +5,7 @@
     "name_ko": "베트남",
     "name_en": "Vietnam",
     "currency": "VND",
+    "exch_unit": null,
     "voltage": "220V",
     "plug": ["A", "C"],
     "tz_offset_h": -2,
@@ -12,6 +13,11 @@
     "emergency": {"police": "113", "ambulance": "115"},
     "airport_iata": "SGN",
     "tipping": "팁 일반적이지 않음, 고급 식당은 5~10%",
+    "travel_tips": [
+      "그랩(Grab) 앱 필수 — 택시 바가지 회피",
+      "현금 위주(동), 소액권 미리 준비. 0 개수 많아 계산 실수 주의",
+      "길거리 음식은 얼음·생채소 주의, 생수만 마실 것"
+    ],
     "visa_static": {
       "required": false,
       "duration_days": 45,
@@ -22,9 +28,53 @@
     [11, 3,  "peak", "건기 성수기"],
     [5,  9,  "off",  "우기, 가격 저렴하나 비 많음"]
   ],
-  "city_meta": {},
+  "city_meta": {
+    "danang": {
+      "name_ko": "다낭", "name_local": "Đà Nẵng",
+      "tags": ["리조트", "미케비치", "바나힐", "가성비"],
+      "best_for": ["family", "couple", "friends"],
+      "season_highlight": {"spring": "미케비치", "summer": "바나힐 골든브릿지",
+                           "autumn": "오행산", "winter": "리조트 휴양"}
+    },
+    "hoian": {
+      "name_ko": "호이안", "name_local": "Hội An",
+      "tags": ["등불거리", "구시가", "야경", "감성"],
+      "best_for": ["couple", "family", "solo"],
+      "season_highlight": {"spring": "구시가 산책", "summer": "안방비치",
+                           "autumn": "등불축제", "winter": "야간 등불거리"}
+    },
+    "hanoi": {
+      "name_ko": "하노이", "name_local": "Hà Nội",
+      "tags": ["구시가", "호안끼엠", "쌀국수", "하롱베이 관문"],
+      "best_for": ["solo", "friends", "couple"],
+      "season_highlight": {"spring": "호안끼엠 호수", "summer": "하롱베이 크루즈",
+                           "autumn": "구시가 카페", "winter": "에그커피·쌀국수"}
+    },
+    "hochiminh": {
+      "name_ko": "호치민", "name_local": "Hồ Chí Minh",
+      "tags": ["도심", "쇼핑", "야시장", "루프탑바"],
+      "best_for": ["friends", "couple", "solo"],
+      "season_highlight": {"spring": "벤탄시장", "summer": "루프탑 바",
+                           "autumn": "구찌터널", "winter": "메콩델타 투어"}
+    },
+    "nhatrang": {
+      "name_ko": "나트랑", "name_local": "Nha Trang",
+      "tags": ["해변", "머드스파", "빈원더스", "휴양"],
+      "best_for": ["family", "couple", "friends"],
+      "season_highlight": {"spring": "빈원더스", "summer": "호핑투어",
+                           "autumn": "머드스파", "winter": "해변 휴양"}
+    },
+    "phuquoc": {
+      "name_ko": "푸꾸옥", "name_local": "Phú Quốc",
+      "tags": ["섬", "리조트", "선셋타운", "스노클링"],
+      "best_for": ["couple", "family"],
+      "season_highlight": {"spring": "선셋타운", "summer": "스노클링",
+                           "autumn": "케이블카", "winter": "리조트 휴양"}
+    }
+  },
   "filter_keywords": [
-    "베트남", "하노이", "호치민", "다낭", "호이안", "나트랑", "푸꾸옥",
-    "vietnam", "hanoi", "danang", "hoian", "nha trang"
+    "베트남", "하노이", "호치민", "다낭", "호이안", "나트랑", "푸꾸옥", "하롱베이",
+    "사파", "달랏", "붕따우", "미케비치", "바나힐",
+    "vietnam", "hanoi", "danang", "hoian", "nha trang", "phu quoc"
   ]
 }

@@ -1,0 +1,75 @@
+{
+  "code": "TW",
+  "mofa_iso3": "TWN",
+  "static": {
+    "name_ko": "대만",
+    "name_en": "Taiwan",
+    "currency": "TWD",
+    "exch_unit": null,
+    "voltage": "110V",
+    "plug": ["A", "B"],
+    "tz_offset_h": -1,
+    "lang": "중국어(번체)",
+    "emergency": {"police": "110", "ambulance": "119"},
+    "airport_iata": "TPE",
+    "tipping": "팁 문화 없음(호텔 짐 운반은 소액)",
+    "travel_tips": [
+      "이지카드(悠遊卡) 하나로 지하철·버스·편의점 결제 가능",
+      "야시장은 현금 위주 — 소액 현금 필수",
+      "여름철 태풍 시즌(7~9월) 항공편 지연 주의"
+    ],
+    "visa_static": {
+      "required": false,
+      "duration_days": 90,
+      "note": "한국 여권 무비자 90일"
+    }
+  },
+  "season_rules": [
+    [10, 12, "peak",     "가을·초겨울 최적기, 선선하고 건조"],
+    [3,  5,  "shoulder", "봄, 온화하나 비 잦음"],
+    [6,  9,  "off",      "무더위·태풍 시즌, 가격 저렴"],
+    [1,  2,  "shoulder", "온화한 겨울, 온천 시즌"]
+  ],
+  "city_meta": {
+    "taipei": {
+      "name_ko": "타이베이", "name_local": "台北",
+      "tags": ["야시장", "101타워", "지우펀", "온천"],
+      "best_for": ["couple", "friends", "solo", "family"],
+      "season_highlight": {"spring": "양명산 벚꽃", "summer": "스린 야시장",
+                           "autumn": "지우펀 홍등", "winter": "베이터우 온천"}
+    },
+    "taichung": {
+      "name_ko": "타이중", "name_local": "台中",
+      "tags": ["가오메이 습지", "무지개마을", "펑지아 야시장", "노을"],
+      "best_for": ["couple", "friends"],
+      "season_highlight": {"spring": "무지개마을", "summer": "가오메이 습지 노을",
+                           "autumn": "르웨탄 호수", "winter": "펑지아 야시장"}
+    },
+    "tainan": {
+      "name_ko": "타이난", "name_local": "台南",
+      "tags": ["고도", "사찰", "소식(小吃)", "전통"],
+      "best_for": ["solo", "couple", "family"],
+      "season_highlight": {"spring": "치메이 박물관", "summer": "안핑 고보",
+                           "autumn": "적감루", "winter": "타이난 소식 투어"}
+    },
+    "kaohsiung": {
+      "name_ko": "가오슝", "name_local": "高雄",
+      "tags": ["항구", "롄츠탄", "포광산", "따뜻한 겨울"],
+      "best_for": ["family", "couple", "friends"],
+      "season_highlight": {"spring": "치진섬", "summer": "롄츠탄 용호탑",
+                           "autumn": "보얼 예술특구", "winter": "따뜻한 남부 겨울"}
+    },
+    "hualien": {
+      "name_ko": "화롄", "name_local": "花蓮",
+      "tags": ["타이루거 협곡", "자연", "동부해안", "트래킹"],
+      "best_for": ["couple", "solo", "family"],
+      "season_highlight": {"spring": "타이루거 협곡", "summer": "치싱탄 해변",
+                           "autumn": "칠성담 자전거", "winter": "동부 해안 드라이브"}
+    }
+  },
+  "filter_keywords": [
+    "대만", "타이베이", "타이중", "타이난", "가오슝", "화롄", "지우펀", "예류",
+    "스펀", "타이루거", "단수이", "101타워", "야시장",
+    "taiwan", "taipei", "taichung", "tainan", "kaohsiung", "hualien", "jiufen"
+  ]
+}

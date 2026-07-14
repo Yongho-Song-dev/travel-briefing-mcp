@@ -5,13 +5,19 @@
     "name_ko": "인도네시아",
     "name_en": "Indonesia",
     "currency": "IDR",
+    "exch_unit": "IDR(100)",
     "voltage": "230V",
     "plug": ["C", "F"],
     "tz_offset_h": -2,
     "lang": "인도네시아어",
     "emergency": {"police": "110", "ambulance": "118"},
-    "airport_iata": "CGK",
+    "airport_iata": "DPS",
     "tipping": "10% 정도 일반적",
+    "travel_tips": [
+      "VOA(도착비자) 또는 e-VOA 사전 발급 필요 — 유일하게 비자 필요한 국가",
+      "발리는 그랩 이용 제한 구역 있음 — 지역 택시·기사 대절 병행",
+      "우기(10~4월)엔 스콜성 폭우 — 오전 일정, 오후 실내 배치 권장"
+    ],
     "visa_static": {
       "required": true,
       "duration_days": 30,
@@ -22,8 +28,32 @@
     [5,  9,  "peak", "발리 건기 성수기"],
     [10, 4,  "off",  "우기, 가격 저렴"]
   ],
-  "city_meta": {},
+  "city_meta": {
+    "bali": {
+      "name_ko": "발리", "name_local": "Bali",
+      "tags": ["리조트", "우붓", "서핑", "요가·힐링"],
+      "best_for": ["couple", "solo", "family", "friends"],
+      "season_highlight": {"spring": "우붓 라이스테라스", "summer": "꾸따 서핑·건기 절정",
+                           "autumn": "울루와뚜 절벽 노을", "winter": "스파·리조트 휴양"}
+    },
+    "jakarta": {
+      "name_ko": "자카르타", "name_local": "Jakarta",
+      "tags": ["도심", "쇼핑몰", "환승 거점", "박물관"],
+      "best_for": ["solo", "friends"],
+      "season_highlight": {"spring": "모나스 타워", "summer": "코타 투아 구시가",
+                           "autumn": "쇼핑몰 투어", "winter": "천섬 당일치기"}
+    },
+    "yogyakarta": {
+      "name_ko": "욕야카르타", "name_local": "Yogyakarta",
+      "tags": ["보로부두르", "프람바난", "유네스코", "역사"],
+      "best_for": ["solo", "couple", "family"],
+      "season_highlight": {"spring": "보로부두르 일출", "summer": "프람바난 사원",
+                           "autumn": "므라피 화산 지프", "winter": "왕궁·바틱 공방"}
+    }
+  },
   "filter_keywords": [
-    "인도네시아", "발리", "자카르타", "indonesia", "bali", "jakarta"
+    "인도네시아", "발리", "자카르타", "욕야카르타", "우붓", "꾸따", "스미냑",
+    "누사두아", "보로부두르", "길리", "롬복",
+    "indonesia", "bali", "jakarta", "ubud", "yogyakarta"
   ]
 }

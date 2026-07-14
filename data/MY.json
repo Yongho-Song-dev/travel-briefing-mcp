@@ -5,6 +5,7 @@
     "name_ko": "말레이시아",
     "name_en": "Malaysia",
     "currency": "MYR",
+    "exch_unit": "MYR",
     "voltage": "240V",
     "plug": ["G"],
     "tz_offset_h": -1,
@@ -12,6 +13,11 @@
     "emergency": {"police": "999", "ambulance": "999"},
     "airport_iata": "KUL",
     "tipping": "팁 일반적이지 않음",
+    "travel_tips": [
+      "MDAC(전자입국카드) 출발 3일 전까지 온라인 작성 필수",
+      "그랩(Grab) 앱 보편적 — 택시보다 저렴하고 안전",
+      "이슬람 국가 — 사원 방문 시 복장 규정, 라마단 기간 식당 운영 확인"
+    ],
     "visa_static": {
       "required": false,
       "duration_days": 90,
@@ -22,8 +28,39 @@
     [12, 2, "peak",     "건기 성수기"],
     [6,  8, "shoulder", "동·서해안 우기 엇갈림"]
   ],
-  "city_meta": {},
+  "city_meta": {
+    "kualalumpur": {
+      "name_ko": "쿠알라룸푸르", "name_local": "Kuala Lumpur",
+      "tags": ["페트로나스 트윈타워", "쇼핑", "바투동굴", "미식"],
+      "best_for": ["family", "couple", "friends", "solo"],
+      "season_highlight": {"spring": "바투동굴", "summer": "트윈타워 야경",
+                           "autumn": "부킷빈탕 쇼핑", "winter": "KL 타워"}
+    },
+    "kotakinabalu": {
+      "name_ko": "코타키나발루", "name_local": "Kota Kinabalu",
+      "tags": ["노을", "리조트", "섬투어", "휴양"],
+      "best_for": ["couple", "family", "friends"],
+      "season_highlight": {"spring": "탄중아루 노을", "summer": "섬 호핑투어",
+                           "autumn": "키나발루산", "winter": "리조트 휴양"}
+    },
+    "penang": {
+      "name_ko": "페낭", "name_local": "Penang",
+      "tags": ["조지타운", "벽화", "미식", "유네스코"],
+      "best_for": ["solo", "couple", "friends"],
+      "season_highlight": {"spring": "조지타운 벽화", "summer": "페낭힐",
+                           "autumn": "거리 음식 투어", "winter": "바투페링기 해변"}
+    },
+    "langkawi": {
+      "name_ko": "랑카위", "name_local": "Langkawi",
+      "tags": ["섬", "케이블카", "면세", "리조트"],
+      "best_for": ["couple", "family"],
+      "season_highlight": {"spring": "스카이브릿지", "summer": "맹그로브 투어",
+                           "autumn": "판타이체낭 해변", "winter": "리조트 휴양"}
+    }
+  },
   "filter_keywords": [
-    "말레이시아", "쿠알라룸푸르", "코타키나발루", "malaysia", "kuala lumpur", "kota kinabalu"
+    "말레이시아", "쿠알라룸푸르", "코타키나발루", "페낭", "랑카위", "조호바루",
+    "말라카", "트윈타워", "바투동굴", "조지타운",
+    "malaysia", "kuala lumpur", "kota kinabalu", "penang", "langkawi"
   ]
 }

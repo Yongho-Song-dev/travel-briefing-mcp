@@ -1,0 +1,83 @@
+{
+  "code": "CN",
+  "mofa_iso3": "CHN",
+  "static": {
+    "name_ko": "중국",
+    "name_en": "China",
+    "currency": "CNY",
+    "exch_unit": "CNH",
+    "voltage": "220V",
+    "plug": ["A", "C", "I"],
+    "tz_offset_h": -1,
+    "lang": "중국어(만다린)",
+    "emergency": {"police": "110", "ambulance": "120", "fire": "119"},
+    "airport_iata": "PEK",
+    "tipping": "팁 문화 없음",
+    "travel_tips": [
+      "구글·카카오톡·인스타그램 차단 — VPN 사전 설치 또는 로밍 이용",
+      "알리페이·위챗페이 필수 (현금 안 받는 곳 많음, 해외카드 등록 가능)",
+      "전자 입국카드 및 현지 실명 인증 필요한 앱 다수"
+    ],
+    "visa_static": {
+      "required": false,
+      "duration_days": 30,
+      "note": "한국 여권 무비자 30일(한시 정책, 반드시 최신 공지 확인)"
+    }
+  },
+  "season_rules": [
+    [4,  5,  "peak",     "봄 성수기, 쾌적한 날씨"],
+    [9,  10, "peak",     "가을 성수기(국경절 연휴 혼잡)"],
+    [6,  8,  "shoulder", "무더위·우기, 가격 중간"],
+    [11, 3,  "off",      "겨울 비수기(북부 강추위)"]
+  ],
+  "city_meta": {
+    "beijing": {
+      "name_ko": "베이징", "name_local": "北京",
+      "tags": ["자금성", "만리장성", "역사", "궁중요리"],
+      "best_for": ["family", "couple", "solo"],
+      "season_highlight": {"spring": "이화원 봄꽃", "summer": "만리장성 트래킹",
+                           "autumn": "향산 단풍", "winter": "설경 자금성"}
+    },
+    "shanghai": {
+      "name_ko": "상하이", "name_local": "上海",
+      "tags": ["와이탄 야경", "쇼핑", "디즈니랜드", "모던"],
+      "best_for": ["couple", "friends", "family"],
+      "season_highlight": {"spring": "위위안 봄", "summer": "디즈니랜드",
+                           "autumn": "와이탄 야경", "winter": "난징루 일루미네이션"}
+    },
+    "xian": {
+      "name_ko": "시안", "name_local": "西安",
+      "tags": ["병마용", "실크로드", "성벽", "회민가 먹거리"],
+      "best_for": ["family", "solo", "couple"],
+      "season_highlight": {"spring": "성벽 자전거", "summer": "병마용",
+                           "autumn": "화산 등반", "winter": "회민가 먹거리"}
+    },
+    "chengdu": {
+      "name_ko": "청두", "name_local": "成都",
+      "tags": ["판다", "훠궈", "느긋함", "쓰촨요리"],
+      "best_for": ["family", "couple", "friends"],
+      "season_highlight": {"spring": "판다기지", "summer": "청청산 피서",
+                           "autumn": "주자이거우 단풍", "winter": "훠궈"}
+    },
+    "guilin": {
+      "name_ko": "구이린", "name_local": "桂林",
+      "tags": ["리강 유람", "카르스트 산수", "양숴", "자연"],
+      "best_for": ["couple", "family", "solo"],
+      "season_highlight": {"spring": "룽지 다랑논", "summer": "리강 뱃놀이",
+                           "autumn": "양숴 자전거", "winter": "안개 낀 산수"}
+    },
+    "qingdao": {
+      "name_ko": "칭다오", "name_local": "青島",
+      "tags": ["맥주", "해변", "독일풍 거리", "해산물"],
+      "best_for": ["friends", "couple"],
+      "season_highlight": {"spring": "잔교 산책", "summer": "맥주축제·해수욕",
+                           "autumn": "라오산 등반", "winter": "해산물"}
+    }
+  },
+  "filter_keywords": [
+    "중국", "베이징", "북경", "상하이", "상해", "시안", "서안", "청두", "성도",
+    "구이린", "계림", "칭다오", "청도", "장자제", "장가계", "항저우", "쑤저우",
+    "만리장성", "자금성", "판다", "와이탄", "병마용",
+    "china", "beijing", "shanghai", "xian", "chengdu", "guilin", "qingdao"
+  ]
+}

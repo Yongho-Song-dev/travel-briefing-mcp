@@ -5,6 +5,7 @@
     "name_ko": "필리핀",
     "name_en": "Philippines",
     "currency": "PHP",
+    "exch_unit": null,
     "voltage": "220V",
     "plug": ["A", "B", "C"],
     "tz_offset_h": -1,
@@ -12,6 +13,11 @@
     "emergency": {"police": "117", "ambulance": "911"},
     "airport_iata": "MNL",
     "tipping": "10% 정도 일반적",
+    "travel_tips": [
+      "출국 항공권(리턴 티켓) 없으면 탑승 거부될 수 있음",
+      "그랩(Grab) 앱 사용 권장, 야간 도보 이동 자제",
+      "리조트 외 지역은 수돗물 음용 금지 — 생수만"
+    ],
     "visa_static": {
       "required": false,
       "duration_days": 30,
@@ -19,11 +25,49 @@
     }
   },
   "season_rules": [
-    [12, 5, "peak", "건기 성수기(특히 12~2월)"],
-    [6,  11,"off",  "우기, 태풍 주의"]
+    [12, 5,  "peak", "건기 성수기(특히 12~2월)"],
+    [6,  11, "off",  "우기, 태풍 주의"]
   ],
-  "city_meta": {},
+  "city_meta": {
+    "cebu": {
+      "name_ko": "세부", "name_local": "Cebu",
+      "tags": ["리조트", "호핑투어", "고래상어", "가성비"],
+      "best_for": ["family", "couple", "friends"],
+      "season_highlight": {"spring": "호핑투어", "summer": "카와산 폭포",
+                           "autumn": "리조트 휴양", "winter": "고래상어 스노클링"}
+    },
+    "boracay": {
+      "name_ko": "보라카이", "name_local": "Boracay",
+      "tags": ["화이트비치", "노을", "해양스포츠", "휴양"],
+      "best_for": ["couple", "friends", "family"],
+      "season_highlight": {"spring": "화이트비치", "summer": "파라세일링",
+                           "autumn": "선셋 세일링", "winter": "최적 건기 휴양"}
+    },
+    "manila": {
+      "name_ko": "마닐라", "name_local": "Manila",
+      "tags": ["도심", "쇼핑몰", "인트라무로스", "환승 거점"],
+      "best_for": ["solo", "friends"],
+      "season_highlight": {"spring": "인트라무로스", "summer": "쇼핑몰",
+                           "autumn": "리잘 공원", "winter": "마닐라베이 노을"}
+    },
+    "palawan": {
+      "name_ko": "팔라완", "name_local": "Palawan",
+      "tags": ["엘니도", "라군", "섬투어", "자연"],
+      "best_for": ["couple", "solo"],
+      "season_highlight": {"spring": "엘니도 라군", "summer": "지하강 국립공원",
+                           "autumn": "아일랜드 호핑", "winter": "코론 다이빙"}
+    },
+    "bohol": {
+      "name_ko": "보홀", "name_local": "Bohol",
+      "tags": ["초콜릿힐", "안경원숭이", "알로나비치", "자연"],
+      "best_for": ["family", "couple"],
+      "season_highlight": {"spring": "초콜릿힐", "summer": "로복강 크루즈",
+                           "autumn": "알로나 비치", "winter": "타르시어 보호구역"}
+    }
+  },
   "filter_keywords": [
-    "필리핀", "마닐라", "세부", "보라카이", "팔라완", "philippines", "manila", "cebu"
+    "필리핀", "마닐라", "세부", "보라카이", "팔라완", "보홀", "엘니도", "코론",
+    "클락", "바기오", "화이트비치", "초콜릿힐",
+    "philippines", "manila", "cebu", "boracay", "palawan", "bohol"
   ]
 }

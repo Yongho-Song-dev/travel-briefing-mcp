@@ -5,6 +5,7 @@
     "name_ko": "태국",
     "name_en": "Thailand",
     "currency": "THB",
+    "exch_unit": "THB",
     "voltage": "220V",
     "plug": ["A", "B", "C"],
     "tz_offset_h": -2,
@@ -12,6 +13,11 @@
     "emergency": {"police": "191", "ambulance": "1669", "tourist_police": "1155"},
     "airport_iata": "BKK",
     "tipping": "20~50바트 소액 팁 관습",
+    "travel_tips": [
+      "TDAC(전자입국카드) 출발 전 온라인 작성 필수",
+      "그랩(Grab) 앱 또는 미터기 사용 요구 — 흥정 택시 회피",
+      "사원 방문 시 민소매·반바지 금지(무릎·어깨 가리기)"
+    ],
     "visa_static": {
       "required": false,
       "duration_days": 90,
@@ -19,12 +25,50 @@
     }
   },
   "season_rules": [
-    [11, 2, "peak",     "건기·서늘기, 최성수기"],
-    [3,  5, "shoulder", "혹서기, 가격 중간"],
-    [6,  10,"off",      "우기, 가격 저렴"]
+    [11, 2,  "peak",     "건기·서늘기, 최성수기"],
+    [3,  5,  "shoulder", "혹서기, 가격 중간"],
+    [6,  10, "off",      "우기, 가격 저렴"]
   ],
-  "city_meta": {},
+  "city_meta": {
+    "bangkok": {
+      "name_ko": "방콕", "name_local": "กรุงเทพฯ",
+      "tags": ["사원", "야시장", "루프탑바", "마사지"],
+      "best_for": ["friends", "couple", "solo", "family"],
+      "season_highlight": {"spring": "송크란 물축제", "summer": "짜뚜짝 시장",
+                           "autumn": "왕궁·왓포", "winter": "루프탑 바"}
+    },
+    "chiangmai": {
+      "name_ko": "치앙마이", "name_local": "เชียงใหม่",
+      "tags": ["올드시티", "사원", "코끼리보호소", "느긋함"],
+      "best_for": ["solo", "couple", "family"],
+      "season_highlight": {"spring": "도이수텝", "summer": "코끼리 보호소",
+                           "autumn": "님만해민 카페", "winter": "러이끄라통 등불축제"}
+    },
+    "phuket": {
+      "name_ko": "푸켓", "name_local": "ภูเก็ต",
+      "tags": ["해변", "리조트", "피피섬", "휴양"],
+      "best_for": ["couple", "family", "friends"],
+      "season_highlight": {"spring": "피피섬 투어", "summer": "빠통 비치",
+                           "autumn": "리조트 휴양", "winter": "제임스본드섬"}
+    },
+    "pattaya": {
+      "name_ko": "파타야", "name_local": "พัทยา",
+      "tags": ["해변", "방콕 근교", "워터파크", "액티비티"],
+      "best_for": ["friends", "family"],
+      "season_highlight": {"spring": "산호섬", "summer": "농눅빌리지",
+                           "autumn": "워킹스트리트", "winter": "해변 리조트"}
+    },
+    "krabi": {
+      "name_ko": "끄라비", "name_local": "กระบี่",
+      "tags": ["석회암 절벽", "아오낭", "섬투어", "자연"],
+      "best_for": ["couple", "solo", "friends"],
+      "season_highlight": {"spring": "4섬 투어", "summer": "라일레이 비치",
+                           "autumn": "에메랄드 풀", "winter": "아오낭 해변"}
+    }
+  },
   "filter_keywords": [
-    "태국", "방콕", "치앙마이", "푸켓", "파타야", "thailand", "bangkok", "phuket"
+    "태국", "방콕", "치앙마이", "푸켓", "파타야", "끄라비", "코사무이", "피피섬",
+    "아유타야", "카오산", "짜뚜짝", "송크란",
+    "thailand", "bangkok", "chiangmai", "phuket", "pattaya", "krabi"
   ]
 }

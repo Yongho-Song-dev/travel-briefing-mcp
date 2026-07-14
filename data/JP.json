@@ -5,6 +5,7 @@
     "name_ko": "일본",
     "name_en": "Japan",
     "currency": "JPY",
+    "exch_unit": "JPY(100)",
     "voltage": "100V",
     "plug": ["A"],
     "tz_offset_h": 0,
@@ -12,6 +13,11 @@
     "emergency": {"police": "110", "ambulance": "119"},
     "airport_iata": "TYO",
     "tipping": "팁 문화 없음(오히려 결례)",
+    "travel_tips": [
+      "Visit Japan Web 사전 등록 시 입국 심사 QR 로 간소화",
+      "현금 병행 필수 — 소규모 식당·신사는 카드 불가한 곳 많음",
+      "지역 교통패스(JR패스 등)는 이동 구간 계산 후 구매가 유리"
+    ],
     "visa_static": {
       "required": false,
       "duration_days": 90,
