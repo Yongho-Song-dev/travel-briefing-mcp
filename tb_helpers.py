@@ -10,8 +10,8 @@ from typing import Optional
 from datetime import date, datetime, timedelta
 
 from tb_config import (
-    _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW,
-    _PURPOSE_KO, _PURPOSE_ANGLE, _QUERY_VOCAB,
+    _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW, _DOMESTIC_KW,
+    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _QUERY_VOCAB,
     city_meta, today_kst,
 )
 
@@ -19,23 +19,45 @@ from tb_config import (
 # ===========================================================================
 # 1) 검색·판정 헬퍼
 # ===========================================================================
+_SEASON_KO = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}
+
+
+def _kw_score(title: str, body: str, keywords: list[str]) -> int:
+    """
+    - 키워드 등장 횟수로 글의 성격을 점수화하는 함수 (제목은 본문보다 3배 가중)
+    ### Args:
+      - title(str) / body(str): 소문자로 변환된 제목·본문
+      - keywords(list[str]): 채점 대상 키워드
+    ### Returns:
+      - score(int): 가중 합산 점수
+    """
+    return sum(3 * title.count(kw.lower()) + body.count(kw.lower()) for kw in keywords)
+
+
 def _filter_by_country(posts: list[dict], country: str) -> list[dict]:
     """
     - 블로그 검색 결과에서 해당 국가와 무관한(국내 여행 등) 글을 제거하는 함수
-      title+description 에 국가 키워드가 하나도 없으면 제외.
+      단순 포함 검사는 오탐이 난다 — 부산 여행기에 "부산역 근처 일본 가옥" 한 줄만 있어도
+      '일본' 이 잡혀 통과했다. 그래서 국가 신호와 국내 신호를 점수로 비교해,
+      국가 신호가 더 강한 글만 남긴다.
     ### Args:
       - posts(list[dict]): _fetch_naver_blog 결과
       - country(str): 국가 코드
     ### Returns:
-      - result(list[dict]): 국가 관련 글만 남긴 목록
+      - result(list[dict]): 해당 국가 글만 남긴 목록
     """
     keywords = _COUNTRY_FILTER_KW.get(country, [])
     if not keywords:
         return posts
+
     result = []
     for p in posts:
-        text = (p.get("title", "") + " " + p.get("description", "")).lower()
-        if any(kw.lower() in text for kw in keywords):
+        title = p.get("title", "").lower()
+        body  = p.get("description", "").lower()
+        abroad   = _kw_score(title, body, keywords)
+        domestic = _kw_score(title, body, _DOMESTIC_KW)
+        # 해외 신호가 없거나, 국내 신호가 더 강하면 제외 (동점이면 해외로 인정)
+        if abroad and abroad >= domestic:
             result.append(p)
     return result
 
@@ -436,6 +458,160 @@ def _render_city_guide_md(country: str, category_hint: Optional[str] = None) -> 
     return "\n".join(lines)
 
 
+def _render_city_picks_md(
+    country: str, purpose: Optional[str], depart_month: int, limit: int = 4,
+) -> list[str]:
+    """
+    - 도시를 지정하지 않은 사용자에게 "어디로 갈지"를 제안하는 함수
+      "혼자 어디가 좋아?" 같은 질문의 핵심은 목적지 자체다. 목적(best_for)이 맞는 도시를
+      우선 노출하고, 출발 월의 시즌 하이라이트를 붙여 선택 근거를 준다.
+    ### Args:
+      - country(str): 국가 코드
+      - purpose(Optional[str]): 여행 목적. 맞는 도시를 앞으로 정렬
+      - depart_month(int): 출발 월 (시즌 하이라이트 선택용)
+      - limit(int): 최대 노출 도시 수
+    ### Returns:
+      - lines(list[str]): 마크다운 라인 목록 (도시 데이터 없으면 빈 리스트)
+    """
+    cities = city_meta(country)
+    if not cities:
+        return []
+
+    season_key = _QUERY_VOCAB.get("month_to_season", {}).get(depart_month)
+
+    # 목적이 맞는 도시를 앞에, 나머지는 뒤에 (목적 미지정이면 원래 순서)
+    matched = [(k, m) for k, m in cities.items() if purpose and purpose in m.get("best_for", [])]
+    others  = [(k, m) for k, m in cities.items() if (k, m) not in matched]
+    picked  = (matched + others)[:limit]
+    if not picked:
+        return []
+
+    head = "## 📍 어디로 갈까요?"
+    if purpose:
+        head += f" ({_PURPOSE_KO.get(purpose, purpose)}에 잘 맞는 도시)"
+    lines = [head]
+    # season_highlight 는 4계절 단위라 월 단위 정밀도가 없다 (9월은 autumn 이지만
+    # 단풍은 10~11월). "이 시기엔" 이라고 단정하지 말고 계절 하이라이트로만 제시한다.
+    season_ko = _SEASON_KO.get(season_key, "")
+    for key, m in picked:
+        tags = "·".join(m.get("tags", [])[:3])
+        hl   = m.get("season_highlight", {}).get(season_key) if season_key else None
+        line = f"- **{m['name_ko']}** — {tags}"
+        if hl and season_ko:
+            line += f" / {season_ko} 하이라이트: **{hl}**"
+        lines.append(line)
+    lines.append("")
+    lines.append(f"> 도시를 정하면 그 도시 기준으로 다시 추천해 드려요. "
+                 f"(예: \"{picked[0][1]['name_ko']}로 갈래\")")
+    lines.append("")
+    return lines
+
+
+def _pick_spots_for_purpose(spots: list[dict], purpose: Optional[str], want: int) -> list[dict]:
+    """
+    - 목적에 맞는 카테고리 우선순위로 스팟을 고르는 함수
+      폐업 리스크가 낮은 landmark 를 앞세우고, 카테고리를 번갈아 담아 하루가 단조롭지 않게 한다.
+    ### Args:
+      - spots(list[dict]): 도시의 전체 스팟
+      - purpose(Optional[str]): 여행 목적. None 이면 기본 순서
+      - want(int): 필요한 스팟 수
+    ### Returns:
+      - picked(list[dict]): 고른 스팟 (want 개 이하)
+    """
+    plan  = _PURPOSE_PLAN.get(purpose or "", {})
+    order = plan.get("categories") or ["culture", "food", "nature", "shopping", "onsen"]
+
+    # 운영 중단된 곳은 코스에서 제외 (get_destinations 는 뱃지로 표시하지만 코스엔 넣지 않음)
+    alive = [s for s in spots if s.get("status") != "under_renovation"]
+
+    by_cat: dict[str, list[dict]] = {}
+    for s in alive:
+        by_cat.setdefault(s["category"], []).append(s)
+    for items in by_cat.values():   # landmark 우선 (수십 년 안정)
+        items.sort(key=lambda x: 0 if x.get("stability") == "landmark" else 1)
+
+    picked: list[dict] = []
+    while len(picked) < want:
+        added = False
+        for cat in order:                      # 카테고리를 돌아가며 하나씩
+            if by_cat.get(cat):
+                picked.append(by_cat[cat].pop(0))
+                added = True
+                if len(picked) >= want:
+                    break
+        if not added:                          # 스팟이 동남
+            break
+    return picked
+
+
+def _render_day_plan_md(
+    city_ko: str, spots: list[dict], purpose: Optional[str], nights: int,
+) -> list[str]:
+    """
+    - 큐레이션 스팟을 일자별 코스 뼈대로 배치하는 함수
+      호스트 LLM 이 시간·식사·이동 같은 살을 붙일 수 있도록 '재료와 골격'만 제공한다.
+      (서버가 완성된 문장을 쓰지 않는다 — 추론은 호스트 LLM 담당)
+    ### Args:
+      - city_ko(str): 도시 한글명
+      - spots(list[dict]): 도시의 전체 스팟 (destinations JSON)
+      - purpose(Optional[str]): 여행 목적
+      - nights(int): 숙박 수
+    ### Returns:
+      - lines(list[str]): 마크다운 라인 목록 (스팟 없으면 빈 리스트)
+    """
+    if not spots:
+        return []
+
+    plan     = _PURPOSE_PLAN.get(purpose or "", {})
+    per_day  = plan.get("spots_per_day", 3)
+    days     = nights + 1
+
+    # 첫날은 도착, 마지막 날은 귀국이라 일정을 줄인다
+    quota   = [max(per_day - 1, 1)] + [per_day] * max(days - 2, 0)
+    if days >= 2:
+        quota.append(max(per_day - 1, 1))
+
+    picked = _pick_spots_for_purpose(spots, purpose, sum(quota))
+    if not picked:
+        return []
+
+    # 스팟이 요청 일수보다 모자라면 균등 재분배 — 안 그러면 마지막 날이 통째로 빠진다
+    if len(picked) < sum(quota):
+        base, rem = divmod(len(picked), days)
+        quota = [base + (1 if i < rem else 0) for i in range(days)]
+
+    labels = ["도착 · 시내 적응"] + ["핵심 관광"] * max(days - 2, 0)
+    if days >= 2:
+        labels.append("여유롭게 마무리 · 귀국")
+
+    purpose_ko = _PURPOSE_KO.get(purpose, "") if purpose else ""
+    head = f"## 🗓 {nights}박{days}일 코스 제안 ({city_ko}"
+    head += f" · {purpose_ko})" if purpose_ko else ")"
+    lines = [head]
+
+    idx = 0
+    for day in range(days):
+        take = quota[day] if day < len(quota) else per_day
+        todays = picked[idx:idx + take]
+        idx += take
+        lines.append(f"**Day {day + 1}** — {labels[day] if day < len(labels) else '자유 일정'}")
+        if todays:
+            for s in todays:
+                link = f"https://map.kakao.com/?q={s['search_query']}"
+                lines.append(f"- [{s['name_ko']}]({link}) — {s['one_liner']}")
+        else:
+            # 큐레이션 스팟이 일수보다 적은 경우 — 날짜를 빠뜨리지 않고 여백으로 남긴다
+            lines.append("- 자유 일정 (쇼핑·카페·근교 당일치기 등)")
+        lines.append("")
+
+    note = plan.get("note")
+    if note:
+        lines.append(f"> 💡 {note}")
+    lines.append("> 순서·시간은 숙소 위치에 맞춰 조정하세요. 아래 실제 후기도 함께 참고하시면 좋습니다.")
+    lines.append("")
+    return lines
+
+
 def _render_country_traits_md(country: str, city: Optional[str], depart_month: int) -> list[str]:
     """
     - 국가·도시 특징(여행 팁 + 시즌 하이라이트)을 마크다운 라인 목록으로 만드는 함수
@@ -456,7 +632,8 @@ def _render_country_traits_md(country: str, city: Optional[str], depart_month: i
     if city and city in cities and season_key:
         highlight = cities[city].get("season_highlight", {}).get(season_key)
         if highlight:
-            lines.append(f"- 🗓 **이 시기 이 도시**: {highlight}")
+            season_ko = _SEASON_KO.get(season_key, "")
+            lines.append(f"- 🗓 **{season_ko} 하이라이트**: {highlight}")
 
     tips = static.get("travel_tips", [])
     for t in tips:
@@ -475,6 +652,8 @@ def _render_itinerary_md(
     exch: Optional[dict] = None,
     depart_month: int = 1,
     estimated: bool = False,
+    spots: Optional[list[dict]] = None,
+    nights: int = 3,
 ) -> str:
     """
     - 블로그 후기 + 목적별 방향 + 환율 + 국가 특징을 정제 마크다운으로 렌더링하는 함수
@@ -524,6 +703,14 @@ def _render_itinerary_md(
         if exch_line:
             lines.append(f"**💱 환율**: {exch_line}")
             lines.append("")
+
+    # 도시 미지정 = "어디 가면 좋아?" 가 질문의 핵심 → 목적에 맞는 도시부터 제안
+    if not city:
+        lines.extend(_render_city_picks_md(country, purpose, depart_month))
+    # 도시가 정해졌고 큐레이션 스팟이 있으면 → 일자별 코스 뼈대를 재료로 제공
+    elif spots:
+        city_ko = cities.get(city, {}).get("name_ko", city)
+        lines.extend(_render_day_plan_md(city_ko, spots, purpose, nights))
 
     # 목적별 여행 방향 — 같은 목적이라도 세부 방향(데이트/휴식/취미 등)에 따라
     # 갈 곳이 달라지므로 방향을 함께 제시해 호스트 LLM 이 좁혀가게 함

@@ -386,14 +386,22 @@ def recommend_itinerary(
     Use this whenever the user asks where to go, what to do, or for a trip plan or
     itinerary for a supported country (JP, CN, TW, VN, TH, PH, SG, MY, ID) — for example
     "9월에 친구들이랑 오사카 4박5일 어디 가면 좋을까?". Recommends a personalized itinerary
-    from Travel Briefing(트래블 브리핑) by combining the current exchange rate, country-specific
-    travel traits, purpose-based planning angles, and real traveler blog reviews.
+    from Travel Briefing(트래블 브리핑) by combining a day-by-day route of curated spots
+    (with Kakao Map links), the current exchange rate, country-specific travel traits,
+    purpose-based planning angles, and real traveler blog reviews. When city is given,
+    returns an actual day-by-day course you can flesh out with times and meals.
     Only country is required. Never ask the user for exact dates first: pass whatever the
     user gave (month such as 9, nights such as 4, or exact YYYY-MM-DD dates) and the tool
     fills in the rest. purpose is one of family, couple, friends, solo.
     """
     d = resolve_trip_dates(depart_date, return_date, month, nights)
     dep, ret, n = d["depart"], d["return"], d["nights"]
+
+    # 도시가 정해졌으면 큐레이션 스팟을 실어 보낸다 — 이게 있어야 LLM 이 일정을 짤 수 있다
+    # (블로그 발췌 60자만으로는 동선을 만들 재료가 없음)
+    spots: list[dict] = []
+    if city and country in CURATED_COUNTRIES:
+        spots = get_destinations_json().get("cities", {}).get(city, {}).get("spots", [])
 
     budget_str = f"{budget_krw // 10000}만원" if budget_krw else None
     nights_str = f"{n}박{n + 1}일"
@@ -418,6 +426,7 @@ def recommend_itinerary(
         country, query, posts, dep.isoformat(), ret.isoformat(),
         budget_str, purpose, num_people, nights_str, city,
         exch=exch, depart_month=dep.month, estimated=d["estimated"],
+        spots=spots, nights=n,
     )
 
 

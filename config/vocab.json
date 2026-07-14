@@ -5,6 +5,33 @@
     "friends": "친구여행",
     "solo":    "혼자여행"
   },
+  "purpose_plan": {
+    "couple": {
+      "categories": ["culture", "nature", "food", "onsen", "shopping"],
+      "spots_per_day": 3,
+      "note": "사진 남기기 좋은 곳 위주 — 하루의 끝은 야경·노을로"
+    },
+    "solo": {
+      "categories": ["onsen", "culture", "nature", "food", "shopping"],
+      "spots_per_day": 2,
+      "note": "느슨하게 — 빈 시간을 남겨두는 것이 혼자 여행의 핵심"
+    },
+    "family": {
+      "categories": ["nature", "culture", "shopping", "food", "onsen"],
+      "spots_per_day": 2,
+      "note": "이동 최소화 — 숙소 근처 위주로, 오후엔 실내 대안 확보"
+    },
+    "friends": {
+      "categories": ["food", "shopping", "culture", "nature", "onsen"],
+      "spots_per_day": 4,
+      "note": "먹거리·번화가 비중 높게 — 밤까지 이어지는 동선"
+    }
+  },
+  "domestic_keywords": [
+    "제주", "제주도", "부산", "강릉", "속초", "경주", "전주", "여수", "통영",
+    "남해", "가평", "양양", "태안", "안동", "대구", "울산", "포항", "거제",
+    "국내여행", "당일치기", "펜션", "글램핑"
+  ],
   "purpose_angle": {
     "couple": {
       "focus": "데이트 여행",
