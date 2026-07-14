@@ -1,0 +1,125 @@
+{
+  "code": "JP",
+  "mofa_iso3": "JPN",
+  "static": {
+    "name_ko": "일본",
+    "name_en": "Japan",
+    "currency": "JPY",
+    "voltage": "100V",
+    "plug": ["A"],
+    "tz_offset_h": 0,
+    "lang": "일본어",
+    "emergency": {"police": "110", "ambulance": "119"},
+    "airport_iata": "TYO",
+    "tipping": "팁 문화 없음(오히려 결례)",
+    "visa_static": {
+      "required": false,
+      "duration_days": 90,
+      "note": "한국 여권 무비자(관광)"
+    }
+  },
+  "season_rules": [
+    [3,  4,  "peak",     "벚꽃 시즌, 항공·숙박 최성수기"],
+    [7,  8,  "peak",     "여름 휴가철, 가격 매우 높음"],
+    [11, 11, "peak",     "단풍 시즌"],
+    [1,  2,  "off",      "겨울 비수기(홋카이도 제외)"],
+    [5,  6,  "shoulder", "장마 전 어깨 시즌, 가성비 좋음"]
+  ],
+  "city_meta": {
+    "tokyo": {
+      "name_ko": "도쿄", "name_local": "東京",
+      "tags": ["쇼핑", "애니메이션", "먹거리", "도시"],
+      "best_for": ["friends", "couple", "solo"],
+      "season_highlight": {
+        "spring": "우에노 벚꽃",
+        "summer": "스미다가와 불꽃축제",
+        "autumn": "히비야 단풍",
+        "winter": "일루미네이션"
+      }
+    },
+    "osaka": {
+      "name_ko": "오사카", "name_local": "大阪",
+      "tags": ["먹거리", "도톤보리", "가성비", "쇼핑"],
+      "best_for": ["friends", "family", "couple"],
+      "season_highlight": {
+        "spring": "오사카성 벚꽃",
+        "summer": "텐진마츠리",
+        "autumn": "단풍",
+        "winter": "히카리노르네상스"
+      }
+    },
+    "kyoto": {
+      "name_ko": "교토", "name_local": "京都",
+      "tags": ["사찰", "전통문화", "기모노", "고즈넉함"],
+      "best_for": ["couple", "family", "solo"],
+      "season_highlight": {
+        "spring": "기온 벚꽃",
+        "summer": "기온 마츠리",
+        "autumn": "아라시야마 단풍",
+        "winter": "설경 료안지"
+      }
+    },
+    "fukuoka": {
+      "name_ko": "후쿠오카", "name_local": "福岡",
+      "tags": ["야타이", "라멘", "하카타", "가성비"],
+      "best_for": ["friends", "couple", "solo"],
+      "season_highlight": {
+        "spring": "마이즈루 공원 벚꽃",
+        "summer": "하카타기온야마카사",
+        "autumn": "단풍",
+        "winter": "나카스 야타이"
+      }
+    },
+    "sapporo": {
+      "name_ko": "삿포로", "name_local": "札幌",
+      "tags": ["스키", "눈축제", "게요리", "온천"],
+      "best_for": ["friends", "couple", "family"],
+      "season_highlight": {
+        "spring": "오도리 벚꽃",
+        "summer": "라벤더·비어가든",
+        "autumn": "단풍·게요리",
+        "winter": "눈축제·스키"
+      }
+    },
+    "okinawa": {
+      "name_ko": "오키나와", "name_local": "沖縄",
+      "tags": ["바다", "스노쿨링", "에메랄드 해변", "리조트"],
+      "best_for": ["friends", "couple", "family"],
+      "season_highlight": {
+        "spring": "해양스포츠 시작",
+        "summer": "에메랄드 바다 절정",
+        "autumn": "바다·국제거리",
+        "winter": "따뜻한 겨울·고래"
+      }
+    },
+    "hiroshima": {
+      "name_ko": "히로시마", "name_local": "広島",
+      "tags": ["평화공원", "미야지마", "오코노미야키", "역사"],
+      "best_for": ["family", "couple", "solo"],
+      "season_highlight": {
+        "spring": "미야지마 벚꽃",
+        "summer": "원폭기념일",
+        "autumn": "단풍·굴",
+        "winter": "모미지만주"
+      }
+    },
+    "nara": {
+      "name_ko": "나라", "name_local": "奈良",
+      "tags": ["사슴", "도다이지", "나라공원", "교토 근교 당일치기"],
+      "best_for": ["family", "couple"],
+      "season_highlight": {
+        "spring": "벚꽃+사슴",
+        "summer": "녹음+사슴",
+        "autumn": "단풍+사슴",
+        "winter": "설경+사슴"
+      }
+    }
+  },
+  "filter_keywords": [
+    "일본", "도쿄", "오사카", "교토", "후쿠오카", "삿포로", "오키나와",
+    "히로시마", "나라", "고베", "나고야", "요코하마", "센다이", "가나자와",
+    "하코다테", "닛코", "하코네", "기온", "아라시야마", "아사쿠사",
+    "신주쿠", "시부야", "아키하바라", "도톤보리", "난바", "우메다",
+    "japan", "tokyo", "osaka", "kyoto", "fukuoka", "sapporo", "okinawa"
+  ]
+}

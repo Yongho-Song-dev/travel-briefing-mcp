@@ -1,0 +1,30 @@
+{
+  "code": "VN",
+  "mofa_iso3": "VNM",
+  "static": {
+    "name_ko": "베트남",
+    "name_en": "Vietnam",
+    "currency": "VND",
+    "voltage": "220V",
+    "plug": ["A", "C"],
+    "tz_offset_h": -2,
+    "lang": "베트남어",
+    "emergency": {"police": "113", "ambulance": "115"},
+    "airport_iata": "SGN",
+    "tipping": "팁 일반적이지 않음, 고급 식당은 5~10%",
+    "visa_static": {
+      "required": false,
+      "duration_days": 45,
+      "note": "한국 여권 무비자(45일, 정책 자주 변경)"
+    }
+  },
+  "season_rules": [
+    [11, 3,  "peak", "건기 성수기"],
+    [5,  9,  "off",  "우기, 가격 저렴하나 비 많음"]
+  ],
+  "city_meta": {},
+  "filter_keywords": [
+    "베트남", "하노이", "호치민", "다낭", "호이안", "나트랑", "푸꾸옥",
+    "vietnam", "hanoi", "danang", "hoian", "nha trang"
+  ]
+}

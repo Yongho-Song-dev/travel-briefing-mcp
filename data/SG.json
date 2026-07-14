@@ -1,0 +1,28 @@
+{
+  "code": "SG",
+  "mofa_iso3": "SGP",
+  "static": {
+    "name_ko": "싱가포르",
+    "name_en": "Singapore",
+    "currency": "SGD",
+    "voltage": "230V",
+    "plug": ["G"],
+    "tz_offset_h": -1,
+    "lang": "영어/중국어/말레이어",
+    "emergency": {"police": "999", "ambulance": "995"},
+    "airport_iata": "SIN",
+    "tipping": "팁 문화 없음(서비스 차지 포함)",
+    "visa_static": {
+      "required": false,
+      "duration_days": 90,
+      "note": "SG Arrival Card 사전 작성"
+    }
+  },
+  "season_rules": [
+    [12, 1, "peak",     "연말연시 성수기"],
+    [6,  8, "peak",     "여름 휴가 성수기"],
+    [2,  5, "shoulder", "가성비 좋은 시즌"]
+  ],
+  "city_meta": {},
+  "filter_keywords": ["싱가포르", "singapore"]
+}

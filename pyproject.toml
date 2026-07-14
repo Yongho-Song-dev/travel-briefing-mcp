@@ -1,0 +1,10 @@
+[project]
+name = "travel-briefing-mcp"
+version = "5.0.0"
+description = "Travel Briefing MCP server — Japan travel essentials (visa, safety, exchange rate, destinations)"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.9.0",
+    "httpx>=0.28.0",
+    "python-dotenv>=1.0.0",
+]

@@ -1,0 +1,30 @@
+{
+  "code": "TH",
+  "mofa_iso3": "THA",
+  "static": {
+    "name_ko": "태국",
+    "name_en": "Thailand",
+    "currency": "THB",
+    "voltage": "220V",
+    "plug": ["A", "B", "C"],
+    "tz_offset_h": -2,
+    "lang": "태국어",
+    "emergency": {"police": "191", "ambulance": "1669", "tourist_police": "1155"},
+    "airport_iata": "BKK",
+    "tipping": "20~50바트 소액 팁 관습",
+    "visa_static": {
+      "required": false,
+      "duration_days": 90,
+      "note": "TDAC(전자입국카드) 사전 작성 필수"
+    }
+  },
+  "season_rules": [
+    [11, 2, "peak",     "건기·서늘기, 최성수기"],
+    [3,  5, "shoulder", "혹서기, 가격 중간"],
+    [6,  10,"off",      "우기, 가격 저렴"]
+  ],
+  "city_meta": {},
+  "filter_keywords": [
+    "태국", "방콕", "치앙마이", "푸켓", "파타야", "thailand", "bangkok", "phuket"
+  ]
+}

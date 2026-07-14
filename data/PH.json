@@ -1,0 +1,29 @@
+{
+  "code": "PH",
+  "mofa_iso3": "PHL",
+  "static": {
+    "name_ko": "필리핀",
+    "name_en": "Philippines",
+    "currency": "PHP",
+    "voltage": "220V",
+    "plug": ["A", "B", "C"],
+    "tz_offset_h": -1,
+    "lang": "영어/타갈로그어",
+    "emergency": {"police": "117", "ambulance": "911"},
+    "airport_iata": "MNL",
+    "tipping": "10% 정도 일반적",
+    "visa_static": {
+      "required": false,
+      "duration_days": 30,
+      "note": "30일 무비자, 출국 항공권 필수"
+    }
+  },
+  "season_rules": [
+    [12, 5, "peak", "건기 성수기(특히 12~2월)"],
+    [6,  11,"off",  "우기, 태풍 주의"]
+  ],
+  "city_meta": {},
+  "filter_keywords": [
+    "필리핀", "마닐라", "세부", "보라카이", "팔라완", "philippines", "manila", "cebu"
+  ]
+}
