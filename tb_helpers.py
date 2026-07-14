@@ -7,7 +7,7 @@ tb_api 를 임포트하지 않는다 (렌더러에 필요한 동적 값은 인�
 
 from __future__ import annotations
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from tb_config import (
     _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW,
@@ -40,9 +40,63 @@ def _filter_by_country(posts: list[dict], country: str) -> list[dict]:
     return result
 
 
+def resolve_trip_dates(
+    depart_date: Optional[str] = None,
+    return_date: Optional[str] = None,
+    month: Optional[int] = None,
+    nights: Optional[int] = None,
+) -> dict:
+    """
+    - 사용자가 흘리듯 말한 일정("9월에", "4박5일")을 실제 날짜로 해석하는 함수
+      카톡 사용자는 'YYYY-MM-DD' 로 말하지 않는다. 날짜를 필수 인수로 두면 호스트 LLM 이
+      인수를 채우지 못해 툴 호출 자체를 포기하므로, 부분 정보만으로도 채워준다.
+    ### Args:
+      - depart_date(Optional[str]): 출국일 'YYYY-MM-DD'. 없으면 month 로 추정
+      - return_date(Optional[str]): 귀국일 'YYYY-MM-DD'. 없으면 nights 로 계산
+      - month(Optional[int]): 출발 월 1~12 ("9월에" → 9). 이미 지난 달이면 내년으로 해석
+      - nights(Optional[int]): 숙박 수 ("4박5일" → 4)
+    ### Returns:
+      - result(dict): {'depart': date, 'return': date, 'nights': int, 'estimated': bool}
+                      estimated=True 면 날짜를 추정한 것 (응답에 안내 문구 표시)
+    """
+    today = date.today()
+    estimated = False
+
+    # 1) 출국일
+    dep: Optional[date] = None
+    if depart_date:
+        try:
+            dep = datetime.strptime(depart_date, "%Y-%m-%d").date()
+        except ValueError:
+            dep = None
+    if dep is None:
+        estimated = True
+        if month and 1 <= month <= 12:
+            # 이미 지난 달을 말했다면 내년 그 달로 해석 (7월에 "3월" → 내년 3월)
+            year = today.year if month >= today.month else today.year + 1
+            dep = date(year, month, 15)          # 월 중순 = 그 달의 대표값
+        else:
+            dep = today + timedelta(days=30)     # 아무 단서 없으면 한 달 뒤
+
+    # 2) 숙박 수 → 귀국일
+    n: Optional[int] = None
+    if return_date:
+        try:
+            n = (datetime.strptime(return_date, "%Y-%m-%d").date() - dep).days
+        except ValueError:
+            n = None
+    if n is None or n <= 0:
+        if not (nights and nights > 0):
+            estimated = True
+        n = nights if (nights and nights > 0) else 3   # 기본 3박4일
+
+    return {"depart": dep, "return": dep + timedelta(days=n),
+            "nights": n, "estimated": estimated}
+
+
 def _build_naver_query(
     country: str, nights: int, purpose: Optional[str],
-    budget_krw: int, depart_month: int, city: Optional[str] = None,
+    budget_krw: Optional[int], depart_month: int, city: Optional[str] = None,
 ) -> str:
     """
     - 여행 조건을 조합해 네이버 블로그 검색 최적 쿼리를 생성하는 함수
@@ -71,12 +125,13 @@ def _build_naver_query(
     purpose_kw   = _QUERY_VOCAB["purpose"].get(purpose, [""])[0] if purpose else ""
     season_kw    = _QUERY_VOCAB["month_season_kw"].get(depart_month, "여행")
 
-    # 예산 티어 레이블 (중간 구간은 공란 → 쿼리 미포함)
+    # 예산 티어 레이블 (중간 구간은 공란 → 쿼리 미포함). 예산 미지정이면 생략
     budget_label = ""
-    for low, high, label in _QUERY_VOCAB["budget_tier"]:
-        if low <= budget_krw < high:
-            budget_label = label
-            break
+    if budget_krw:
+        for low, high, label in _QUERY_VOCAB["budget_tier"]:
+            if low <= budget_krw < high:
+                budget_label = label
+                break
 
     parts = [place, nights_str, purpose_kw, season_kw]
     if budget_label:
@@ -408,11 +463,12 @@ def _render_country_traits_md(country: str, city: Optional[str], depart_month: i
 
 def _render_itinerary_md(
     country: str, query: str, posts: list[dict],
-    depart: str, ret: str, budget_str: str,
+    depart: str, ret: str, budget_str: Optional[str],
     purpose: Optional[str], num_people: Optional[int], nights_str: str,
     city: Optional[str] = None,
     exch: Optional[dict] = None,
     depart_month: int = 1,
+    estimated: bool = False,
 ) -> str:
     """
     - 블로그 후기 + 목적별 방향 + 환율 + 국가 특징을 정제 마크다운으로 렌더링하는 함수
@@ -443,7 +499,8 @@ def _render_itinerary_md(
         cond.append(f"**인원**: {num_people}명")
     if purpose:
         cond.append(f"**목적**: {_PURPOSE_KO.get(purpose, purpose)}")
-    cond.append(f"**1인 예산**: {budget_str}")
+    if budget_str:
+        cond.append(f"**1인 예산**: {budget_str}")
 
     lines = [
         f"# {static['name_ko']}{city_label} 맞춤 여행 추천",
@@ -451,6 +508,9 @@ def _render_itinerary_md(
         "  ".join(cond),
         "",
     ]
+    if estimated:
+        lines.append("> 📅 정확한 날짜를 알려주시면 시즌·항공 정보가 더 정확해집니다.")
+        lines.append("")
 
     # 환율 — 현지 물가 감각을 잡는 데 필요 (예산 배분의 기준)
     if exch:

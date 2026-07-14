@@ -45,7 +45,7 @@ from tb_api import (
 )
 from tb_helpers import (
     _filter_by_country, _build_naver_query, _judge_season, _build_skyscanner_link,
-    _exchange_line,
+    _exchange_line, resolve_trip_dates,
     _render_alert_md, _render_exchange_md, _render_briefing_md,
     _render_flight_md, _render_destinations_md, _render_city_guide_md,
     _render_itinerary_md,
@@ -119,9 +119,10 @@ def tool(**kwargs: Any) -> Callable:
 @tool(annotations={"title": "Trip Briefing", "openWorldHint": True, **_READONLY})
 def get_trip_briefing(country: SupportedCountry) -> str:
     """
-    Retrieves pre-trip essentials (visa from MOFA API, voltage, time difference,
-    currency, emergency numbers, embassy contact) for a destination from
-    Travel Briefing(트래블 브리핑). Falls back to cached static visa info if MOFA is unavailable.
+    Use this when the user asks about visa requirements, plug/voltage, time difference,
+    emergency numbers, or the Korean embassy for a country — for example "일본 비자 필요해?".
+    Retrieves pre-trip essentials from Travel Briefing(트래블 브리핑), with visa status
+    from the Korean MOFA API. Falls back to cached static visa info if MOFA is unavailable.
 
     - 출발 전 필수 정보(비자는 외교부 동적, 나머지는 정적/대사관 외부JSON)를 마크다운으로 반환하는 함수
     ### Args:
@@ -144,9 +145,10 @@ def get_trip_briefing(country: SupportedCountry) -> str:
 @tool(annotations={"title": "Current Status", "openWorldHint": True, **_READONLY})
 def get_current_status(country: SupportedCountry) -> str:
     """
-    Retrieves the current MOFA travel-advisory level, effective date, and regional
-    advisory note for a destination from Travel Briefing(트래블 브리핑). The calling
-    LLM should use these official signals when explaining the overall situation.
+    Use this when the user asks whether a country is safe to visit right now — for example
+    "지금 중국 가도 안전해?". Retrieves the current MOFA travel-advisory level, effective
+    date, and regional advisory note from Travel Briefing(트래블 브리핑). The calling LLM
+    should use these official signals when explaining the overall situation.
 
     - 외교부 여행경보 단계와 발효일을 반환하는 함수(뉴스는 v1 미포함)
     ### Args:
@@ -161,9 +163,11 @@ def get_current_status(country: SupportedCountry) -> str:
 @tool(annotations={"title": "Exchange Rate", "openWorldHint": True, **_READONLY})
 def get_exchange_rate(country: SupportedCountry) -> str:
     """
-    Retrieves the current KRW-based exchange rate for a destination's currency
-    from Travel Briefing(트래블 브리핑) via the Korea Eximbank API. For currencies
-    not quoted by the bank (VND, PHP, TWD), returns the USD rate with double-exchange guidance.
+    Use this when the user asks about exchange rates, currency, or how much money to
+    exchange for a trip — for example "베트남 환율 어때?". Retrieves the current KRW-based
+    exchange rate from Travel Briefing(트래블 브리핑) via the Korea Eximbank API.
+    For currencies not quoted by the bank (VND, PHP, TWD), returns the USD rate with
+    double-exchange guidance.
 
     - 해당 국가 통화의 현재 원화 매매기준율을 반환하는 함수
       수출입은행 미고시 통화(베트남 동·필리핀 페소·대만 달러)는 USD 기준 + 이중환전 안내로 대체.
@@ -176,22 +180,37 @@ def get_exchange_rate(country: SupportedCountry) -> str:
 
 
 @tool(annotations={"title": "Flight Season Guide", "openWorldHint": False, **_READONLY})
-def get_flight_season_guide(country: SupportedCountry, depart_date: str, return_date: str) -> str:
+def get_flight_season_guide(
+    country: SupportedCountry,
+    depart_date: Optional[str] = None,
+    return_date: Optional[str] = None,
+    month: Optional[int] = None,
+    nights: Optional[int] = None,
+) -> str:
     """
-    Provides peak/off-peak season insight, optimal booking-timing tips, and a
-    Skyscanner comparison link (no real-time price) from Travel Briefing(트래블 브리핑).
+    Use this when the user asks when to go, whether a period is peak or off-season, or
+    how airfare will look — for example "10월에 대만 가면 비싸?". Provides peak/off-peak
+    season insight, booking-timing tips, and a Skyscanner comparison link (no real-time
+    price) from Travel Briefing(트래블 브리핑). Only country is required; pass month
+    (such as 10) or nights when the user did not give exact YYYY-MM-DD dates.
 
-    - 여행 기간을 받아 시즌 판정·예약 팁·스카이스캐너 링크를 반환하는 함수(외부호출 없음)
+    - 여행 시기를 받아 시즌 판정·예약 팁·스카이스캐너 링크를 반환하는 함수(외부호출 없음)
     ### Args:
       - country(SupportedCountry): 국가 코드
-      - depart_date(str): 출국일 'YYYY-MM-DD'
-      - return_date(str): 귀국일 'YYYY-MM-DD'
+      - depart_date/return_date(Optional[str]): 'YYYY-MM-DD'. 없으면 month·nights 로 추정
+      - month(Optional[int]): 출발 월 1~12
+      - nights(Optional[int]): 숙박 수
     ### Returns:
       - md(str): 시즌 판정 + 예약 시점 팁 + 스카이스캐너 딥링크
     """
-    season = _judge_season(country, depart_date)
-    link = _build_skyscanner_link(country, depart_date, return_date)
-    return _render_flight_md(country, season, depart_date, return_date, link)
+    d = resolve_trip_dates(depart_date, return_date, month, nights)
+    dep, ret = d["depart"].isoformat(), d["return"].isoformat()
+    season = _judge_season(country, dep)
+    link = _build_skyscanner_link(country, dep, ret)
+    md = _render_flight_md(country, season, dep, ret, link)
+    if d["estimated"]:
+        md += "\n> 📅 날짜를 지정하면 더 정확한 안내가 가능합니다."
+    return md
 
 
 @tool(annotations={"title": "Destinations", "openWorldHint": True, **_READONLY})
@@ -201,10 +220,12 @@ def get_destinations(
     category: Optional[Literal["culture", "food", "nature", "shopping", "onsen"]] = None,
 ) -> str:
     """
-    Retrieves travel destinations for a country from Travel Briefing(트래블 브리핑).
+    Use this when the user asks which cities or places to visit in a supported country
+    (JP, CN, TW, VN, TH, PH, SG, MY, ID) — for example "교토 어디 가면 좋아?" or
+    "대만 어느 도시가 좋아?". Retrieves travel destinations from Travel Briefing(트래블 브리핑).
     Japan returns curated spot-level lists (culture/food/nature/shopping/onsen) with
-    Kakao Map links; other supported countries (CN, TW, VN, TH, PH, SG, MY, ID) return
-    a city-level guide with seasonal highlights and recommended traveler types.
+    Kakao Map links; other countries return a city-level guide with seasonal highlights
+    and recommended traveler types. Only country is required.
 
     - 도시·카테고리별 여행지를 반환하는 함수
       일본: 스팟 단위 큐레이션 (외부 JSON, 24h 갱신 → 폐업·리뉴얼 반영)
@@ -252,19 +273,33 @@ def get_destinations(
 
 
 @tool(annotations={"title": "Pre-Trip Checklist", "openWorldHint": True, **_READONLY})
-def compose_checklist(country: SupportedCountry, depart_date: str, return_date: str) -> str:
+def compose_checklist(
+    country: SupportedCountry,
+    depart_date: Optional[str] = None,
+    return_date: Optional[str] = None,
+    month: Optional[int] = None,
+    nights: Optional[int] = None,
+) -> str:
     """
-    Composes a D-7 pre-trip checklist card (copy-paste friendly) by combining the
-    other tools' outputs from Travel Briefing(트래블 브리핑).
+    Use this when the user asks what to prepare or pack before a trip — for example
+    "다음 주 도쿄 가는데 뭐 준비해야 해?". Composes a copy-paste friendly pre-trip
+    checklist from Travel Briefing(트래블 브리핑), combining visa, travel advisory,
+    exchange rate, season, emergency numbers, and country-specific preparations.
+    Only country is required; pass month or nights when exact dates are unknown.
 
-    - 다른 툴 결과를 종합해 D-7 체크리스트 카드를 만드는 함수(데모 메인)
+    - 비자·경보·환율·시즌을 종합해 D-day 체크리스트 카드를 만드는 함수(데모 메인)
     ### Args:
       - country(SupportedCountry): 국가 코드
-      - depart_date(str): 출국일 'YYYY-MM-DD'
-      - return_date(str): 귀국일 'YYYY-MM-DD'
+      - depart_date/return_date(Optional[str]): 'YYYY-MM-DD'. 없으면 month·nights 로 추정
+      - month(Optional[int]): 출발 월 1~12
+      - nights(Optional[int]): 숙박 수
     ### Returns:
       - md(str): 단톡방 붙여넣기용 요약 카드 + D-day 체크리스트 + 유의사항 + 면책
     """
+    d = resolve_trip_dates(depart_date, return_date, month, nights)
+    depart_date = d["depart"].isoformat()
+    return_date = d["return"].isoformat()
+
     static = _STATIC[country]
     # 외부 API 3종 병렬 조회 — 순차 시 최악 2.5s×3, 병렬 시 max 2.5s (p99 3s 준수)
     # 실패해도 다른 섹션은 살아있도록 개별 예외 처리
@@ -286,18 +321,18 @@ def compose_checklist(country: SupportedCountry, depart_date: str, return_date: 
     season = _judge_season(country, depart_date)
 
     # D-day 산출: 오늘부터 출국일까지 남은 일수
-    try:
-        dep = datetime.strptime(depart_date, "%Y-%m-%d").date()
-        days_left = (dep - date.today()).days
-    except ValueError:
-        days_left = None
+    days_left = (d["depart"] - date.today()).days
 
     lines = [
         f"# ✈️ {static['name_ko']} 여행 체크리스트 ({depart_date} ~ {return_date})",
         "",
     ]
-    if days_left is not None:
-        lines.append(f"**D-{days_left}** 남았습니다.\n" if days_left >= 0 else "출국일이 지났습니다.\n")
+    if d["estimated"]:
+        lines.append("> 📅 날짜를 추정했습니다. 정확한 출국일을 알려주시면 D-day 를 맞춰 드려요.\n")
+    elif days_left >= 0:
+        lines.append(f"**D-{days_left}** 남았습니다.\n")
+    else:
+        lines.append("출국일이 지났습니다.\n")
 
     # 요약 카드 (단톡방 붙여넣기용)
     visa_txt = f"무비자 {visa.get('duration_days','?')}일" if not visa.get("required") else "비자 필요"
@@ -338,35 +373,32 @@ def compose_checklist(country: SupportedCountry, depart_date: str, return_date: 
 @tool(annotations={"title": "Itinerary Recommendation", "openWorldHint": True, **_READONLY})
 def recommend_itinerary(
     country: SupportedCountry,
-    depart_date: str,
-    return_date: str,
-    budget_krw: int,
+    depart_date: Optional[str] = None,
+    return_date: Optional[str] = None,
+    month: Optional[int] = None,
+    nights: Optional[int] = None,
+    budget_krw: Optional[int] = None,
     purpose: Optional[Literal["family", "couple", "friends", "solo"]] = None,
     num_people: Optional[int] = None,
     city: Optional[str] = None,
 ) -> str:
     """
-    Recommends a personalized itinerary from Travel Briefing(트래블 브리핑) using
-    travel dates, per-person budget, party size, trip purpose, current exchange-rate
-    context, destination traits, and cleaned Naver Blog results. If purpose is omitted,
-    returns several planning angles. Supports JP, CN, TW, VN, TH, PH, SG, MY, and ID.
-
-    여행 조건과 정제된 블로그 후기를 조합해 맞춤 일정을 마크다운으로 추천합니다.
-    Dates use YYYY-MM-DD; budget_krw is the per-person KRW budget; purpose is one of
-    family, couple, friends, or solo; num_people and city are optional.
+    Use this whenever the user asks where to go, what to do, or for a trip plan or
+    itinerary for a supported country (JP, CN, TW, VN, TH, PH, SG, MY, ID) — for example
+    "9월에 친구들이랑 오사카 4박5일 어디 가면 좋을까?". Recommends a personalized itinerary
+    from Travel Briefing(트래블 브리핑) by combining the current exchange rate, country-specific
+    travel traits, purpose-based planning angles, and real traveler blog reviews.
+    Only country is required. Never ask the user for exact dates first: pass whatever the
+    user gave (month such as 9, nights such as 4, or exact YYYY-MM-DD dates) and the tool
+    fills in the rest. purpose is one of family, couple, friends, solo.
     """
-    try:
-        dep = datetime.strptime(depart_date, "%Y-%m-%d").date()
-        ret = datetime.strptime(return_date, "%Y-%m-%d").date()
-        nights = (ret - dep).days
-    except ValueError:
-        dep = date.today()
-        nights = 3
+    d = resolve_trip_dates(depart_date, return_date, month, nights)
+    dep, ret, n = d["depart"], d["return"], d["nights"]
 
-    budget_str = f"{budget_krw // 10000}만원"
-    nights_str = f"{nights}박{nights + 1}일"
+    budget_str = f"{budget_krw // 10000}만원" if budget_krw else None
+    nights_str = f"{n}박{n + 1}일"
     query = _build_naver_query(
-        country=country, nights=nights, purpose=purpose,
+        country=country, nights=n, purpose=purpose,
         budget_krw=budget_krw, depart_month=dep.month, city=city,
     )
 
@@ -383,9 +415,9 @@ def recommend_itinerary(
         exch = None
 
     return _render_itinerary_md(
-        country, query, posts, depart_date, return_date,
+        country, query, posts, dep.isoformat(), ret.isoformat(),
         budget_str, purpose, num_people, nights_str, city,
-        exch=exch, depart_month=dep.month,
+        exch=exch, depart_month=dep.month, estimated=d["estimated"],
     )
 
 
