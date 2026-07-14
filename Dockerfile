@@ -25,7 +25,10 @@ USER app
 
 # TB_PORT 미지정 시 호스팅이 주입하는 PORT 를 따르므로 여기서 TB_PORT 를 고정하지 않는다.
 # (PlayMCP 콘솔에서 TB_PORT 를 넣으면 그 값이 최우선)
+# 한국 사용자 대상 서비스 — 컨테이너가 UTC 면 D-day 가 하루 틀리고(00~09시 KST),
+# 수출입은행 고시일(KST 기준) 조회도 하루 어긋난다. 반드시 KST 로 고정.
 ENV PATH="/app/.venv/bin:$PATH" \
+    TZ=Asia/Seoul \
     TB_HOST=0.0.0.0 \
     PORT=8000
 

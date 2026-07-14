@@ -18,7 +18,7 @@ import time
 import os
 
 from tb_config import (
-    logger, SupportedCountry,
+    logger, SupportedCountry, today_kst,
     _API_CFG, _WARM_SCHEDULE, _QUERY_VOCAB, city_meta,
 )
 from tb_api import (
@@ -96,7 +96,7 @@ def _warm_naver_blog_once() -> None:
     cfg        = _API_CFG.get("naver_warm", {})
     main_c     = cfg.get("main_country", "JP")
     budget     = cfg.get("budget_krw", 1_000_000)
-    today      = date.today()
+    today      = today_kst()
     months     = {today.month, today.month % 12 + 1}  # 이번달 + 다음달 (계획 단계 대비)
     purposes   = [None, *_QUERY_VOCAB.get("purpose", {})]
 

@@ -27,7 +27,7 @@ import logging
 import httpx
 
 from tb_config import (
-    logger,
+    logger, today_kst,
     _MOFA_VISA_URL, _MOFA_WARN_URL, _KOREAEXIM_URL, _NAVER_BLOG_URL,
     _HTTP_TIMEOUT_S, _NEGATIVE_TTL_S,
     _MOFA_VISA_TTL_S, _MOFA_ALERT_TTL_S, _EXCHANGE_TTL_S,
@@ -541,7 +541,7 @@ def _fetch_exchange_rows() -> tuple[Optional[list], Optional[date]]:
     ### Returns:
       - (rows, quote_date): 고시 목록과 그 고시일. 끝까지 못 찾으면 (None, None)
     """
-    today = date.today()
+    today = today_kst()
     for back in range(_EXCH_LOOKBACK_DAYS + 1):
         day = today - timedelta(days=back)
         rows = _fetch_exchange_rows_on(day if back else None)
@@ -564,14 +564,14 @@ def _parse_exch_row(row: dict, quote_date: Optional[date] = None) -> Optional[di
     ### Returns:
       - result(Optional[dict]): 파싱 성공 시 결과, 실패 시 None
     """
-    day = quote_date or date.today()
+    day = quote_date or today_kst()
     try:
         return {
             "currency": row["cur_unit"],
             "deal_bas_r": float(row.get("deal_bas_r", "").replace(",", "")),
             "search_date": day.strftime("%Y-%m-%d"),
             "cur_nm": row.get("cur_nm", "-"),
-            "is_stale": day != date.today(),
+            "is_stale": day != today_kst(),
         }
     except (ValueError, KeyError):
         return None

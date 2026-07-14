@@ -36,7 +36,7 @@ import os
 from mcp.server.fastmcp import FastMCP
 
 from tb_config import (
-    SupportedCountry, CURATED_COUNTRIES, _STATIC, _PURPOSE_KO, city_meta,
+    SupportedCountry, CURATED_COUNTRIES, _STATIC, _PURPOSE_KO, city_meta, today_kst,
 )
 from tb_api import (
     _fetch_pool,
@@ -321,7 +321,7 @@ def compose_checklist(
     season = _judge_season(country, depart_date)
 
     # D-day 산출: 오늘부터 출국일까지 남은 일수
-    days_left = (d["depart"] - date.today()).days
+    days_left = (d["depart"] - today_kst()).days
 
     lines = [
         f"# ✈️ {static['name_ko']} 여행 체크리스트 ({depart_date} ~ {return_date})",

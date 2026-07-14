@@ -10,6 +10,7 @@ config/api.json, config/vocab.json, data/*.json 을 임포트 시 1회 로드해
 
 from __future__ import annotations
 from typing import Literal, Any
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import json
 import os
@@ -27,6 +28,22 @@ logger = logging.getLogger("travel-briefing")
 # 일본이 메인, 나머지 8개국(중국·대만 + 동남아 6)도 전 툴 응답 가능.
 # 큐레이션 스팟(destinations_jp.json)은 JP 만, 그 외 국가는 city_meta 기반 도시 가이드 제공.
 SupportedCountry = Literal["JP", "CN", "TW", "VN", "TH", "PH", "SG", "MY", "ID"]
+
+# 한국 사용자 대상 서비스 — '오늘'은 항상 KST 기준이어야 한다.
+# 컨테이너가 UTC 로 뜨면 00~09시 KST 사이에 하루가 밀려 D-day 와 환율 고시일이 틀어진다.
+# Dockerfile 에서 TZ=Asia/Seoul 을 주지만, 플랫폼이 덮어써도 안전하도록 코드에서도 고정한다.
+KST = timezone(timedelta(hours=9))
+
+
+def today_kst() -> date:
+    """
+    - 한국 표준시 기준 오늘 날짜를 반환하는 함수 (컨테이너 TZ 설정과 무관)
+    ### Args:
+      - None
+    ### Returns:
+      - today(date): KST 기준 오늘
+    """
+    return datetime.now(KST).date()
 
 # 큐레이션 JSON 이 있는 국가 (get_destinations 가 스팟 단위 목록을 반환)
 CURATED_COUNTRIES = ("JP",)

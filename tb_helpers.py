@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta
 from tb_config import (
     _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW,
     _PURPOSE_KO, _PURPOSE_ANGLE, _QUERY_VOCAB,
-    city_meta,
+    city_meta, today_kst,
 )
 
 
@@ -59,7 +59,7 @@ def resolve_trip_dates(
       - result(dict): {'depart': date, 'return': date, 'nights': int, 'estimated': bool}
                       estimated=True 면 날짜를 추정한 것 (응답에 안내 문구 표시)
     """
-    today = date.today()
+    today = today_kst()
     estimated = False
 
     # 1) 출국일
