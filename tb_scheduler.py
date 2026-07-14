@@ -42,9 +42,9 @@ def _warm_exchange_once() -> None:
     ### Returns:
       - None (실패 시 기존 캐시 유지, 로그만 남김)
     """
-    rows = _fetch_exchange_rows()
+    rows, quote_date = _fetch_exchange_rows()
     if not rows:
-        logger.info("환율 워밍 스킵 (주말·공휴일 빈 응답 또는 API 실패)")
+        logger.warning("환율 워밍 실패 (최근 영업일까지 고시 없음 또는 API 오류)")
         return
     by_unit = {r.get("cur_unit", ""): r for r in rows}
 
@@ -58,11 +58,11 @@ def _warm_exchange_once() -> None:
         if row is None:
             logger.warning("환율 워밍: 고시 목록에 없는 통화 (%s)", unit)
             continue
-        result = _parse_exch_row(row)
+        result = _parse_exch_row(row, quote_date)
         if result is not None:
             _store_exch(unit, result)
             warmed += 1
-    logger.info("환율 워밍 완료 (%d/%d개 통화)", warmed, len(units))
+    logger.info("환율 워밍 완료 (%d/%d개 통화, 고시일 %s)", warmed, len(units), quote_date)
 
 
 def _warm_mofa_once() -> None:

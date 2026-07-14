@@ -213,7 +213,8 @@ def _exchange_line(exch: dict) -> Optional[str]:
         r = exch.get("rate")
         if not r:
             return None
-        return f"{r['currency']} = 약 {r['deal_bas_r']:,.2f} 원 (매매기준율)"
+        basis = f"{r['search_date']} 고시" if r.get("is_stale") else "매매기준율"
+        return f"{r['currency']} = 약 {r['deal_bas_r']:,.2f} 원 ({basis})"
     usd = exch.get("usd")
     if not usd:
         return None
@@ -249,14 +250,19 @@ def _render_exchange_md(static: dict, exch: dict) -> str:
     result = exch.get("rate")
     if not result:
         return header + "\n> 환율 조회 실패. 잠시 후 다시 시도해주세요."
-    stale_note = (
-        "\n> ⚠️ 주말·공휴일로 API 갱신 불가 — 직전 영업일 기준 환율입니다."
-        if result.get("is_stale") else ""
-    )
+
+    # 주말·공휴일이나 당일 고시 전에는 직전 영업일 값이 나온다 — 기준일을 정확히 밝힌다
+    if result.get("is_stale"):
+        basis = f"{result['search_date']} 고시 기준"
+        note  = "\n> ⚠️ 오늘 고시가 아직 없어 직전 영업일 매매기준율입니다(주말·공휴일·고시 전)."
+    else:
+        basis = f"{result['search_date']} 당일 고시"
+        note  = ""
+
     return (
         f"{header}\n"
-        f"**{result['currency']}** = 약 **{result['deal_bas_r']:,.2f} 원** (당일 매매기준율, {result['search_date']} 기준)\n"
-        f"{stale_note}\n"
+        f"**{result['currency']}** = 약 **{result['deal_bas_r']:,.2f} 원** (매매기준율, {basis})\n"
+        f"{note}\n"
         f"> 실거래 환율은 은행·환전소별로 상이. 참고용."
     )
 

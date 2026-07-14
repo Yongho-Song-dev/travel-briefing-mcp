@@ -13,7 +13,7 @@ GitHub Raw(대사관·큐레이션 JSON) 호출을 담당한다.
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import html
@@ -500,44 +500,78 @@ def get_exchange_for_country(country: str) -> dict:
             "usd": _fetch_exchange_rate("USD"), "currency": currency}
 
 
-def _fetch_exchange_rows() -> Optional[list]:
+# 고시가 없는 날(주말·공휴일·고시 전 시간대)에 거슬러 올라갈 최대 일수.
+# 연휴가 길어도 닿도록 넉넉히 잡되, 콜드 스타트 지연을 막기 위해 상한을 둔다.
+_EXCH_LOOKBACK_DAYS = 7
+
+
+def _fetch_exchange_rows_on(day: Optional[date] = None) -> Optional[list]:
     """
-    - 수출입은행 API 에서 전 통화 고시 목록(원본 rows)을 가져오는 함수
-      주말·공휴일은 빈 배열이 정상 응답임 (호출자가 폴백 처리).
+    - 수출입은행 API 에서 특정 날짜의 전 통화 고시 목록을 가져오는 함수
+      주말·공휴일·당일 고시 전에는 빈 배열 [] 이 정상 응답이다.
     ### Args:
-      - None
+      - day(Optional[date]): 조회 기준일. None 이면 API 기본값(오늘)
     ### Returns:
-      - rows(Optional[list]): 통화별 행 목록. 네트워크/키 오류 시 None
+      - rows(Optional[list]): 통화별 행 목록(없으면 []). 네트워크/키 오류 시 None
     """
     api_key = os.getenv("KOREAEXIM_API_KEY")
     if not api_key:
         logger.warning("KOREAEXIM_API_KEY 환경변수 미설정")
         return None
+    params = {"authkey": api_key, "data": "AP01"}
+    if day is not None:
+        params["searchdate"] = day.strftime("%Y%m%d")
     try:
-        resp = _http.get(_KOREAEXIM_URL, params={"authkey": api_key, "data": "AP01"})
+        resp = _http.get(_KOREAEXIM_URL, params=params)
         resp.raise_for_status()
         rows = resp.json()
         return rows if isinstance(rows, list) else None
     except Exception as exc:  # noqa: BLE001
-        logger.warning("환율 API 실패: %s", exc)
+        logger.warning("환율 API 실패 (%s): %s", day or "today", exc)
         return None
 
 
-def _parse_exch_row(row: dict) -> Optional[dict]:
+def _fetch_exchange_rows() -> tuple[Optional[list], Optional[date]]:
+    """
+    - 유효한 고시가 나올 때까지 직전 영업일로 거슬러 올라가며 조회하는 함수
+      주말·공휴일·고시 전 시간대에 컨테이너가 새로 뜨면 '직전 값'이 메모리에 없어
+      환율이 통째로 실패하던 문제를 막는다 (searchdate 파라미터 사용).
+    ### Args:
+      - None
+    ### Returns:
+      - (rows, quote_date): 고시 목록과 그 고시일. 끝까지 못 찾으면 (None, None)
+    """
+    today = date.today()
+    for back in range(_EXCH_LOOKBACK_DAYS + 1):
+        day = today - timedelta(days=back)
+        rows = _fetch_exchange_rows_on(day if back else None)
+        if rows is None:
+            return None, None          # 네트워크·키 오류 → 즉시 중단(네거티브 캐시로)
+        if rows:
+            if back:
+                logger.info("환율: %s 고시 없음 → %s 값 사용", today, day)
+            return rows, day
+    logger.warning("환율: 최근 %d일간 고시 없음", _EXCH_LOOKBACK_DAYS)
+    return None, None
+
+
+def _parse_exch_row(row: dict, quote_date: Optional[date] = None) -> Optional[dict]:
     """
     - 수출입은행 응답 행 하나를 내부 결과 dict 로 변환하는 함수
     ### Args:
       - row(dict): {'cur_unit', 'deal_bas_r', 'cur_nm', ...}
+      - quote_date(Optional[date]): 실제 고시일. 오늘이 아니면 is_stale=True
     ### Returns:
       - result(Optional[dict]): 파싱 성공 시 결과, 실패 시 None
     """
+    day = quote_date or date.today()
     try:
         return {
             "currency": row["cur_unit"],
             "deal_bas_r": float(row.get("deal_bas_r", "").replace(",", "")),
-            "search_date": datetime.now().strftime("%Y-%m-%d"),
+            "search_date": day.strftime("%Y-%m-%d"),
             "cur_nm": row.get("cur_nm", "-"),
-            "is_stale": False,
+            "is_stale": day != date.today(),
         }
     except (ValueError, KeyError):
         return None
@@ -572,16 +606,15 @@ def _fetch_exchange_rate(currency: str) -> Optional[dict]:
     if cached is not None:
         return cached
 
-    rows = _fetch_exchange_rows()
-    if rows is None:
+    # 오늘 고시가 없으면 직전 영업일까지 거슬러 올라가 조회 (주말·공휴일·고시 전 대응)
+    rows, quote_date = _fetch_exchange_rows()
+    if not rows:
         _cache.set(cache_key, _FETCH_FAIL, _NEGATIVE_TTL_S)
-        return _stale_exch(currency)
-    if not rows:  # 주말·공휴일 정상 빈 응답
         return _stale_exch(currency)
 
     for row in rows:
         if row.get("cur_unit", "").startswith(currency):
-            result = _parse_exch_row(row)
+            result = _parse_exch_row(row, quote_date)
             if result is not None:
                 _store_exch(currency, result)
             return result
