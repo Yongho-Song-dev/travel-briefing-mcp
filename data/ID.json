@@ -1,0 +1,29 @@
+{
+  "code": "ID",
+  "mofa_iso3": "IDN",
+  "static": {
+    "name_ko": "인도네시아",
+    "name_en": "Indonesia",
+    "currency": "IDR",
+    "voltage": "230V",
+    "plug": ["C", "F"],
+    "tz_offset_h": -2,
+    "lang": "인도네시아어",
+    "emergency": {"police": "110", "ambulance": "118"},
+    "airport_iata": "CGK",
+    "tipping": "10% 정도 일반적",
+    "visa_static": {
+      "required": true,
+      "duration_days": 30,
+      "note": "VOA(도착비자) 또는 e-VOA 사전 발급"
+    }
+  },
+  "season_rules": [
+    [5,  9,  "peak", "발리 건기 성수기"],
+    [10, 4,  "off",  "우기, 가격 저렴"]
+  ],
+  "city_meta": {},
+  "filter_keywords": [
+    "인도네시아", "발리", "자카르타", "indonesia", "bali", "jakarta"
+  ]
+}

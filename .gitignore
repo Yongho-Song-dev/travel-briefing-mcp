@@ -5,6 +5,9 @@
 *.key
 *.pem
 
+# API
+api.json
+
 # uv / Python
 .venv/
 __pycache__/
@@ -19,3 +22,4 @@ __pycache__/
 /info
 CLAUDE.md
 .claude/*
+claude_desktop_config.json

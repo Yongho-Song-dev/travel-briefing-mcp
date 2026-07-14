@@ -38,6 +38,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional, Any
 from datetime import date, datetime, timedelta
 from urllib.parse import urlencode
+from pathlib import Path
 import html
 import re
 import threading
@@ -63,97 +64,93 @@ SupportedCountry = Literal["JP"]  # v1: 일본만 지원. v2 에서 확장.
 
 _READONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
 
-# 외부 API 엔드포인트
-_MOFA_VISA_URL  = "https://apis.data.go.kr/1262000/EntranceVisaService2/getEntranceVisaList2"
-_MOFA_WARN_URL  = "https://apis.data.go.kr/1262000/TravelWarningServiceV3/getTravelWarningListV3"
-_KOREAEXIM_URL  = "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON"
-_NAVER_BLOG_URL = "https://openapi.naver.com/v1/search/blog"
-
-# HTTP 호출 타임아웃(가이드 p99 3,000ms 요건 대비 여유)
-_HTTP_TIMEOUT_S = 2.5
-
 # ===========================================================================
-# 1) 정적 인메모리 데이터 (거의 불변)
+# 1) 외부 설정 파일 로더 (config/ + data/)
 # ===========================================================================
-_STATIC: dict[str, dict] = {
-    "JP": {"name_ko": "일본", "name_en": "Japan", "currency": "JPY",
-           "voltage": "100V", "plug": ["A"], "tz_offset_h": 0,
-           "lang": "일본어", "emergency": {"police": "110", "ambulance": "119"},
-           "airport_iata": "TYO", "tipping": "팁 문화 없음(오히려 결례)",
-           "visa_static": {"required": False, "duration_days": 90, "note": "한국 여권 무비자(관광)"}},
-    "VN": {"name_ko": "베트남", "name_en": "Vietnam", "currency": "VND",
-           "voltage": "220V", "plug": ["A", "C"], "tz_offset_h": -2,
-           "lang": "베트남어", "emergency": {"police": "113", "ambulance": "115"},
-           "airport_iata": "SGN", "tipping": "팁 일반적이지 않음, 고급 식당은 5~10%",
-           "visa_static": {"required": False, "duration_days": 45, "note": "한국 여권 무비자(45일, 정책 자주 변경)"}},
-    "TH": {"name_ko": "태국", "name_en": "Thailand", "currency": "THB",
-           "voltage": "220V", "plug": ["A", "B", "C"], "tz_offset_h": -2,
-           "lang": "태국어", "emergency": {"police": "191", "ambulance": "1669", "tourist_police": "1155"},
-           "airport_iata": "BKK", "tipping": "20~50바트 소액 팁 관습",
-           "visa_static": {"required": False, "duration_days": 90, "note": "TDAC(전자입국카드) 사전 작성 필수"}},
-    "PH": {"name_ko": "필리핀", "name_en": "Philippines", "currency": "PHP",
-           "voltage": "220V", "plug": ["A", "B", "C"], "tz_offset_h": -1,
-           "lang": "영어/타갈로그어", "emergency": {"police": "117", "ambulance": "911"},
-           "airport_iata": "MNL", "tipping": "10% 정도 일반적",
-           "visa_static": {"required": False, "duration_days": 30, "note": "30일 무비자, 출국 항공권 필수"}},
-    "SG": {"name_ko": "싱가포르", "name_en": "Singapore", "currency": "SGD",
-           "voltage": "230V", "plug": ["G"], "tz_offset_h": -1,
-           "lang": "영어/중국어/말레이어", "emergency": {"police": "999", "ambulance": "995"},
-           "airport_iata": "SIN", "tipping": "팁 문화 없음(서비스 차지 포함)",
-           "visa_static": {"required": False, "duration_days": 90, "note": "SG Arrival Card 사전 작성"}},
-    "MY": {"name_ko": "말레이시아", "name_en": "Malaysia", "currency": "MYR",
-           "voltage": "240V", "plug": ["G"], "tz_offset_h": -1,
-           "lang": "말레이어/영어", "emergency": {"police": "999", "ambulance": "999"},
-           "airport_iata": "KUL", "tipping": "팁 일반적이지 않음",
-           "visa_static": {"required": False, "duration_days": 90, "note": "MDAC(전자입국카드) 사전 작성"}},
-    "ID": {"name_ko": "인도네시아", "name_en": "Indonesia", "currency": "IDR",
-           "voltage": "230V", "plug": ["C", "F"], "tz_offset_h": -2,
-           "lang": "인도네시아어", "emergency": {"police": "110", "ambulance": "118"},
-           "airport_iata": "CGK", "tipping": "10% 정도 일반적",
-           "visa_static": {"required": True, "duration_days": 30, "note": "VOA(도착비자) 또는 e-VOA 사전 발급"}},
-}
+_BASE_DIR = Path(__file__).parent
 
-# 시즌 규칙: (시작월, 종료월, 시즌타입, 한 줄 설명). 기후 기반이라 거의 안 바뀜.
-_SEASON_RULES: dict[str, list[tuple[int, int, str, str]]] = {
-    "JP": [(3, 4, "peak", "벚꽃 시즌, 항공·숙박 최성수기"),
-           (7, 8, "peak", "여름 휴가철, 가격 매우 높음"),
-           (11, 11, "peak", "단풍 시즌"),
-           (1, 2, "off", "겨울 비수기(홋카이도 제외)"),
-           (5, 6, "shoulder", "장마 전 어깨 시즌, 가성비 좋음")],
-    "VN": [(11, 3, "peak", "건기 성수기"),
-           (5, 9, "off", "우기, 가격 저렴하나 비 많음")],
-    "TH": [(11, 2, "peak", "건기·서늘기, 최성수기"),
-           (3, 5, "shoulder", "혹서기, 가격 중간"),
-           (6, 10, "off", "우기, 가격 저렴")],
-    "PH": [(12, 5, "peak", "건기 성수기(특히 12~2월)"),
-           (6, 11, "off", "우기, 태풍 주의")],
-    "SG": [(12, 1, "peak", "연말연시 성수기"),
-           (6, 8, "peak", "여름 휴가 성수기"),
-           (2, 5, "shoulder", "가성비 좋은 시즌")],
-    "MY": [(12, 2, "peak", "건기 성수기"),
-           (6, 8, "shoulder", "동·서해안 우기 엇갈림")],
-    "ID": [(5, 9, "peak", "발리 건기 성수기"),
-           (10, 4, "off", "우기, 가격 저렴")],
-}
 
-# 여행 목적 한국어 레이블
-_PURPOSE_KO: dict[str, str] = {
-    "family":  "가족여행",
-    "couple":  "커플여행",
-    "friends": "친구여행",
-    "solo":    "혼자여행",
-}
+def _load_json(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        logger.warning("설정 파일 로드 실패 %s: %s", path, e)
+        return {}
 
-# 국가 코드 → 외교부 TravelWarningServiceV3 iso_code 매핑 (실측 확인 완료)
-_MOFA_COUNTRY_CODE: dict[str, str] = {
-    "JP": "JPN",
-    "VN": "VNM",
-    "TH": "THA",
-    "PH": "PHL",
-    "SG": "SGP",
-    "MY": "MYS",
-    "ID": "IDN",
-}
+
+def _load_api_config() -> dict:
+    return _load_json(_BASE_DIR / "config" / "api.json")
+
+
+def _load_vocab() -> dict:
+    raw = _load_json(_BASE_DIR / "config" / "vocab.json")
+    q = raw.get("query", {})
+    # JSON 정수 키(문자열) → int 변환
+    q["month_to_season"] = {int(k): v for k, v in q.get("month_to_season", {}).items()}
+    q["month_season_kw"] = {int(k): v for k, v in q.get("month_season_kw", {}).items()}
+    raw["level_name"]    = {int(k): v for k, v in raw.get("level_name", {}).items()}
+    # budget_tier: null → float("inf"), list → tuple
+    tiers = q.get("budget_tier", [])
+    q["budget_tier"] = tuple(
+        (t[0], float("inf") if t[1] is None else t[1], t[2]) for t in tiers
+    )
+    return raw
+
+
+def _load_country_files() -> dict[str, dict]:
+    """data/*.json 전체 로드 → {country_code: data}"""
+    result: dict[str, dict] = {}
+    data_dir = _BASE_DIR / "data"
+    if not data_dir.exists():
+        return result
+    for fp in data_dir.glob("*.json"):
+        raw = _load_json(fp)
+        code = raw.get("code")
+        if code:
+            # season_rules: list[list] → list[tuple]
+            raw["season_rules"] = [tuple(r) for r in raw.get("season_rules", [])]
+            result[code] = raw
+    return result
+
+
+# 설정 로드 (모듈 임포트 시 1회)
+_API_CFG      = _load_api_config()
+_VOCAB        = _load_vocab()
+_COUNTRY_DATA = _load_country_files()
+
+# --- API 엔드포인트 ---
+_EP           = _API_CFG.get("endpoints", {})
+_MOFA_VISA_URL  = _EP.get("mofa_visa",    "https://apis.data.go.kr/1262000/EntranceVisaService2/getEntranceVisaList2")
+_MOFA_WARN_URL  = _EP.get("mofa_warning", "https://apis.data.go.kr/1262000/TravelWarningServiceV3/getTravelWarningListV3")
+_KOREAEXIM_URL  = _EP.get("koreaexim",    "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON")
+_NAVER_BLOG_URL = _EP.get("naver_blog",   "https://openapi.naver.com/v1/search/blog")
+
+_TTL          = _API_CFG.get("ttl_seconds", {})
+_HTTP_TIMEOUT_S = _API_CFG.get("http_timeout_seconds", 2.5)
+
+# --- 국가별 데이터 뷰 (하위 호환 유지) ---
+_STATIC: dict[str, dict]                           = {c: d["static"]        for c, d in _COUNTRY_DATA.items()}
+_SEASON_RULES: dict[str, list]                     = {c: d["season_rules"]  for c, d in _COUNTRY_DATA.items()}
+_CITY_META: dict[str, dict]                        = _COUNTRY_DATA.get("JP", {}).get("city_meta", {})
+_COUNTRY_FILTER_KW: dict[str, list[str]]           = {c: d.get("filter_keywords", []) for c, d in _COUNTRY_DATA.items()}
+_MOFA_COUNTRY_CODE: dict[str, str]                 = {c: d["mofa_iso3"]     for c, d in _COUNTRY_DATA.items()}
+
+# --- 어휘·레이블 뷰 ---
+_PURPOSE_KO: dict[str, str]  = _VOCAB.get("purpose_ko", {})
+_QUERY_VOCAB: dict[str, Any] = _VOCAB.get("query", {})
+_LEVEL_NAME_CFG: dict[int, str] = _VOCAB.get("level_name", {})
+
+
+def _filter_by_country(posts: list[dict], country: str) -> list[dict]:
+    keywords = _COUNTRY_FILTER_KW.get(country, [])
+    if not keywords:
+        return posts
+    result = []
+    for p in posts:
+        text = (p.get("title", "") + " " + p.get("description", "")).lower()
+        if any(kw.lower() in text for kw in keywords):
+            result.append(p)
+    return result
 
 
 # ===========================================================================
@@ -222,7 +219,7 @@ _embassy_data: dict[str, dict] = {}
 _embassy_loaded_at: float = 0.0
 _destinations_jp: dict = {}
 _destinations_jp_loaded_at: float = 0.0
-_EXTERNAL_JSON_TTL_S = 24 * 3600
+_EXTERNAL_JSON_TTL_S = _TTL.get("external_json", 86400)
 
 _refresh_lock = threading.Lock()
 
@@ -297,8 +294,8 @@ def _refresh_destinations_jp_if_stale() -> None:
 # ===========================================================================
 # 4) 외교부 API - 비자(입국허가요건) + 여행경보 (별개 API, 별도 TTL)
 # ===========================================================================
-_MOFA_VISA_TTL_S = 6 * 3600     # 비자 정보는 자주 안 바뀜
-_MOFA_ALERT_TTL_S = 1 * 3600    # 여행경보는 상황 변동성 있음
+_MOFA_VISA_TTL_S  = _TTL.get("mofa_visa",    21600)
+_MOFA_ALERT_TTL_S = _TTL.get("mofa_warning", 3600)
 
 
 _MOFA_VISA_ALL_KEY = "mofa_visa_all"  # 전국가 비자 목록 캐시 키
@@ -502,13 +499,13 @@ def _parse_warning_item(item: dict) -> dict:
     }
 
 
-_LEVEL_NAME = {0: "미발령", 1: "여행유의", 2: "여행자제", 3: "출국권고", 4: "여행금지"}
+_LEVEL_NAME = _LEVEL_NAME_CFG or {0: "미발령", 1: "여행유의", 2: "여행자제", 3: "출국권고", 4: "여행금지"}
 
 
 # ===========================================================================
 # 4-1) 수출입은행 환율 API (TTL 24h)
 # ===========================================================================
-_EXCHANGE_TTL_S = 24 * 3600
+_EXCHANGE_TTL_S = _TTL.get("koreaexim", 86400)
 _last_known_exch: dict[str, dict] = {}  # TTL 만료 후 주말·공휴일 폴백용 영구 저장
 
 
@@ -571,7 +568,7 @@ def _fetch_exchange_rate(currency: str) -> Optional[dict]:
 # ===========================================================================
 # 4-2) 네이버 블로그 검색 API (TTL 1h)
 # ===========================================================================
-_NAVER_BLOG_TTL_S = 1 * 3600
+_NAVER_BLOG_TTL_S = _TTL.get("naver_blog", 3600)
 
 
 def _fetch_naver_blog(query: str, display: int = 5) -> list[dict]:
@@ -742,10 +739,16 @@ def get_destinations(
 
     if not city:
         cities = data.get("cities", {})
-        lines = ["# 일본 대표 도시\n"]
+        lines = ["# 일본 대표 도시 가이드\n"]
         for key, c in cities.items():
-            lines.append(f"- **{c['name_ko']}** ({c['name_local']}) — `city='{key}'`")
-        lines.append("\n> 원하는 도시를 지정하면 스팟을 카테고리별로 보여드립니다.")
+            meta = _CITY_META.get(key, {})
+            tags     = "·".join(meta.get("tags", [])[:3])
+            best_for = "·".join(_PURPOSE_KO.get(p, p) for p in meta.get("best_for", []))
+            lines.append(
+                f"- **{c['name_ko']}** ({c['name_local']})  `city='{key}'`\n"
+                f"  - 특징: {tags or '-'}  |  추천: {best_for or '-'}"
+            )
+        lines.append("\n> 도시를 지정하면 카테고리별 스팟 목록을 보여드립니다.")
         return "\n".join(lines)
 
     city_data = data.get("cities", {}).get(city)
@@ -838,45 +841,92 @@ def recommend_itinerary(
     budget_krw: int,
     purpose: Literal["family", "couple", "friends", "solo"],
     num_people: int,
+    city: Optional[str] = None,
 ) -> str:
     """
     Recommends a personalized travel itinerary by searching real traveler blog
     posts via the Naver Blog API from Travel Briefing(트래블 브리핑).
     Results are based on actual trip reports matching the given schedule, budget,
-    purpose, and group size.
+    purpose, and group size. Optionally filter by city for more specific results.
 
-    - 여행 조건(일정·예산·목적·인원)을 받아 네이버 블로그 후기 기반 맞춤 여행 추천을 반환하는 함수
+    - 여행 조건(일정·예산·목적·인원·도시)을 받아 네이버 블로그 후기 기반 맞춤 추천을 반환하는 함수
     ### Args:
       - country(SupportedCountry): 국가 코드 ('JP')
       - depart_date(str): 출국일 'YYYY-MM-DD'
       - return_date(str): 귀국일 'YYYY-MM-DD'
-      - budget_krw(int): 1인당 예산 (원, 예: 800000)
+      - budget_krw(int): 1인당 예산 (원, 예: 1000000)
       - purpose(str): 여행 목적 'family'|'couple'|'friends'|'solo'
       - num_people(int): 여행 인원 수
+      - city(Optional[str]): 도시 키 (예: 'tokyo', 'osaka'). 미지정 시 국가 전체 검색
     ### Returns:
-      - md(str): 조건 요약 + 블로그 추천 목록 마크다운 (상위 5건)
+      - md(str): 조건 요약 + 블로그 후기 목록 마크다운 (상위 8건)
     """
     static = _STATIC[country]
     try:
         dep = datetime.strptime(depart_date, "%Y-%m-%d").date()
         ret = datetime.strptime(return_date, "%Y-%m-%d").date()
-        nights = (ret - dep).days - 1
-        nights = max(nights, 1)
+        nights = (ret - dep).days
     except ValueError:
+        dep = date.today()
         nights = 3
 
-    purpose_ko  = _PURPOSE_KO.get(purpose, purpose)
-    budget_str  = f"{budget_krw // 10000}만원"
-    nights_str  = f"{nights}박{nights + 1}일"
-    query = f"{static['name_ko']} {nights_str} {purpose_ko} {num_people}명 예산 {budget_str} 여행 추천"
+    purpose_ko = _PURPOSE_KO.get(purpose, purpose)
+    budget_str = f"{budget_krw // 10000}만원"
+    nights_str = f"{nights}박{nights + 1}일"
+    query = _build_naver_query(
+        country=country, nights=nights, purpose=purpose,
+        budget_krw=budget_krw, depart_month=dep.month, city=city,
+    )
 
-    posts = _fetch_naver_blog(query, display=5)
-    return _render_itinerary_md(static, query, posts, depart_date, return_date, budget_str, purpose_ko, num_people, nights_str)
+    posts = _filter_by_country(_fetch_naver_blog(query, display=10), country)
+    return _render_itinerary_md(static, query, posts, depart_date, return_date,
+                                 budget_str, purpose_ko, num_people, nights_str, city)
 
 
 # ===========================================================================
 # 6) 내부 헬퍼
 # ===========================================================================
+def _build_naver_query(
+    country: str, nights: int, purpose: str,
+    budget_krw: int, depart_month: int, city: Optional[str] = None,
+) -> str:
+    """
+    - 여행 조건을 조합해 네이버 블로그 검색 최적 쿼리를 생성하는 함수
+      예산·인원수는 쿼리에서 제외(타국 후기 유입 원인). 국가+도시+시즌+목적으로 고정.
+    ### Args:
+      - country(str): 국가 코드
+      - nights(int): 숙박 수
+      - purpose(str): 여행 목적 코드
+      - budget_krw(int): 1인 예산 (예산 티어 레이블 결정용)
+      - depart_month(int): 출발 월 (시즌 키워드 결정용)
+      - city(Optional[str]): 도시 키 (None이면 국가명만)
+    ### Returns:
+      - query(str): 네이버 블로그 검색 쿼리
+    """
+    static = _STATIC[country]
+
+    # 장소 키워드
+    if city and city in _CITY_META:
+        place = f"{static['name_ko']} {_CITY_META[city]['name_ko']}"
+    else:
+        place = static["name_ko"]
+
+    nights_str   = f"{nights}박{nights + 1}일"
+    purpose_kw   = _QUERY_VOCAB["purpose"].get(purpose, [_PURPOSE_KO.get(purpose, "")])[0]
+    season_kw    = _QUERY_VOCAB["month_season_kw"].get(depart_month, "여행")
+
+    # 예산 티어 레이블 (중간 구간은 공란 → 쿼리 미포함)
+    budget_label = ""
+    for low, high, label in _QUERY_VOCAB["budget_tier"]:
+        if low <= budget_krw < high:
+            budget_label = label
+            break
+
+    parts = [place, nights_str, purpose_kw, season_kw]
+    if budget_label:
+        parts.append(budget_label)
+    parts.append("여행후기")
+    return " ".join(p for p in parts if p)
 def _judge_season(country: str, depart_date: str) -> dict:
     """
     - 출국 월이 해당 국가의 어느 시즌 규칙에 해당하는지 판정하는 함수
@@ -1086,6 +1136,7 @@ def _render_itinerary_md(
     static: dict, query: str, posts: list[dict],
     depart: str, ret: str, budget_str: str,
     purpose_ko: str, num_people: int, nights_str: str,
+    city: Optional[str] = None,
 ) -> str:
     """
     - 네이버 블로그 검색 결과를 정제 마크다운으로 렌더링하는 함수
@@ -1094,11 +1145,15 @@ def _render_itinerary_md(
       - query(str): 실제 검색에 사용된 쿼리
       - posts(list[dict]): _fetch_naver_blog 결과
       - 나머지: 조건 표시용
+      - city(Optional[str]): 도시 키 (헤더 표시용)
     ### Returns:
       - md(str): 조건 요약 + 블로그 후기 목록 마크다운
     """
+    city_label = ""
+    if city and city in _CITY_META:
+        city_label = f" · {_CITY_META[city]['name_ko']}"
     lines = [
-        f"# {static['name_ko']} 맞춤 여행 추천",
+        f"# {static['name_ko']}{city_label} 맞춤 여행 추천",
         "",
         f"**일정**: {depart} ~ {ret} ({nights_str})  "
         f"**인원**: {num_people}명  "
@@ -1114,9 +1169,8 @@ def _render_itinerary_md(
     lines.append("## 📝 실제 여행자 후기")
     lines.append("")
     for i, p in enumerate(posts, 1):
-        desc = p["description"][:120] + "…" if len(p["description"]) > 120 else p["description"]
+        desc = p["description"][:60] + "…" if len(p["description"]) > 60 else p["description"]
         lines.append(f"**{i}. [{p['title']}]({p['link']})**")
-        lines.append(f"- 블로거: {p['bloggername']}")
         lines.append(f"- {desc}")
         lines.append("")
 
