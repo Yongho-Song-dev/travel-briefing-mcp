@@ -53,10 +53,13 @@ from tb_helpers import (
 from tb_scheduler import start_warming
 
 # 컨테이너 환경에선 TB_HOST=0.0.0.0 으로 외부 바인딩 (기본은 로컬 전용 — 보안상 안전한 쪽)
+# 포트: TB_PORT 우선, 없으면 PaaS 관례인 PORT 를 따른다 (PlayMCP 등 호스팅이 주입하는 포트 대응)
+_PORT = os.getenv("TB_PORT") or os.getenv("PORT") or "8000"
+
 mcp = FastMCP(
     "travel-briefing",
     host=os.getenv("TB_HOST", "127.0.0.1"),
-    port=int(os.getenv("TB_PORT", "8000")),
+    port=int(_PORT),
     json_response=True,
     stateless_http=True,
 )

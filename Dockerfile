@@ -23,14 +23,17 @@ COPY destinations_jp.json embassies.json ./
 RUN useradd --create-home --shell /usr/sbin/nologin app && chown -R app:app /app
 USER app
 
+# TB_PORT 미지정 시 호스팅이 주입하는 PORT 를 따르므로 여기서 TB_PORT 를 고정하지 않는다.
+# (PlayMCP 콘솔에서 TB_PORT 를 넣으면 그 값이 최우선)
 ENV PATH="/app/.venv/bin:$PATH" \
     TB_HOST=0.0.0.0 \
-    TB_PORT=8000
+    PORT=8000
 
 EXPOSE 8000
 
 # MCP 엔드포인트 TCP 응답 확인 (curl 없는 slim 이미지 대응)
+# 실제 바인딩 포트(TB_PORT > PORT > 8000)를 그대로 검사해야 포트 변경 시 오탐하지 않는다
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD python -c "import socket; socket.create_connection(('127.0.0.1', 8000), timeout=2)"
+    CMD python -c "import os,socket; p=int(os.getenv('TB_PORT') or os.getenv('PORT') or 8000); socket.create_connection(('127.0.0.1', p), timeout=2)"
 
 CMD ["python", "travel_briefing_mcp.py"]
