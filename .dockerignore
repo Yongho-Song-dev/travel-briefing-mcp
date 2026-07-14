@@ -1,0 +1,21 @@
+# 시크릿 — 이미지에 절대 포함 금지
+.env
+.env.*
+*.key
+*.pem
+
+# 개발 전용
+.git/
+.gitignore
+.venv/
+__pycache__/
+*.pyc
+info/
+.claude/
+CLAUDE.md
+claude_desktop_config.json
+*.log
+test_apis.py
+README.md
+Dockerfile
+.dockerignore
