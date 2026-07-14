@@ -122,7 +122,7 @@ def _warm_naver_blog_once() -> None:
                         ))
     warmed = 0
     for q in sorted(queries):
-        if _fetch_naver_blog(q, display=10):
+        if _fetch_naver_blog(q, display=5):
             warmed += 1
         time.sleep(0.05)  # 네이버 rate limit 여유 (백그라운드라 사용자 영향 없음)
     logger.info("네이버 블로그 워밍 완료 (%d/%d 쿼리 적재)", warmed, len(queries))

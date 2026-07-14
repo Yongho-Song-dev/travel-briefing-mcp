@@ -1,0 +1,29 @@
+{
+  "endpoints": {
+    "mofa_visa":    "https://apis.data.go.kr/1262000/EntranceVisaService2/getEntranceVisaList2",
+    "mofa_warning": "https://apis.data.go.kr/1262000/TravelWarningServiceV3/getTravelWarningListV3",
+    "koreaexim":    "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON",
+    "naver_blog":   "https://openapi.naver.com/v1/search/blog"
+  },
+  "ttl_seconds": {
+    "mofa_visa":     46800,
+    "mofa_warning":   3600,
+    "koreaexim":     86400,
+    "naver_blog":    25200,
+    "external_json": 86400,
+    "negative":         60
+  },
+  "http_timeout_seconds": 2.0,
+  "warm_schedule": {
+    "koreaexim":  [0, 6, 10, 12, 14, 18, 20],
+    "mofa":       [6, 18],
+    "naver_blog": [0, 6, 12, 18]
+  },
+  "naver_warm": {
+    "main_country": "JP",
+    "nights": [2, 3, 4],
+    "secondary_nights": [3],
+    "secondary_max_cities": 3,
+    "budget_krw": 1000000
+  }
+}

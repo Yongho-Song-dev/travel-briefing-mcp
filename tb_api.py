@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 import html
 import re
 import threading
@@ -38,7 +39,9 @@ from tb_config import (
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 # 전역 HTTP 클라이언트 — 연결 풀·TLS 세션 재사용 (httpx.Client 는 스레드 안전)
-_http = httpx.Client(timeout=_HTTP_TIMEOUT_S)
+_http = httpx.Client(
+    timeout=httpx.Timeout(_HTTP_TIMEOUT_S, connect=min(0.5, _HTTP_TIMEOUT_S)),
+)
 
 # 외부 API 병렬 호출용 스레드 풀 (compose_checklist 의 비자·경보·환율 동시 조회)
 _fetch_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tb-fetch")
@@ -109,10 +112,22 @@ _DESTINATIONS_JP_URL = os.getenv(
     "TB_DESTINATIONS_JP_URL",
     "https://raw.githubusercontent.com/Yongho-Song-dev/travel-briefing-mcp/main/destinations_jp.json",
 )
-_embassy_data: dict[str, dict] = {}
-_embassy_loaded_at: float = 0.0
-_destinations_jp: dict = {}
-_destinations_jp_loaded_at: float = 0.0
+def _load_bundled_json(filename: str) -> dict:
+    """컨테이너에 포함된 JSON 스냅샷을 콜드 스타트용으로 로드한다."""
+    try:
+        with (Path(__file__).parent / filename).open(encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("번들 JSON 로드 실패 (%s): %s", filename, exc)
+        return {}
+
+
+_bundled_embassies = _load_bundled_json("embassies.json")
+_embassy_data: dict[str, dict] = _bundled_embassies.get("countries", _bundled_embassies)
+_embassy_loaded_at: float = time.time() if _embassy_data else 0.0
+_destinations_jp: dict = _load_bundled_json("destinations_jp.json")
+_destinations_jp_loaded_at: float = time.time() if _destinations_jp else 0.0
 
 _refresh_lock = threading.Lock()
 

@@ -15,7 +15,7 @@ info/
 CLAUDE.md
 claude_desktop_config.json
 *.log
-test_apis.py
+test_*.py
 README.md
 Dockerfile
 .dockerignore

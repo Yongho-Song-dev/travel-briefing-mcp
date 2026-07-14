@@ -1,7 +1,7 @@
 """
 Travel Briefing(트래블 브리핑) MCP 서버 - v9 (PlayMCP 가이드 2026.06.12 준수)
 
-한국인이 가장 많이 가는 해외여행지 '일본' 한정으로
+일본을 중심으로 중국·대만·동남아 6개국까지
   - 출발 전 준비(비자 동적·전압/시차/통화/긴급/대사관 등)
   - 현재 상황(외교부 경보 + 안전공지)
   - 환율
@@ -9,7 +9,7 @@ Travel Briefing(트래블 브리핑) MCP 서버 - v9 (PlayMCP 가이드 2026.06.
   - 도시별 관광지 큐레이션(GitHub Raw JSON, 24h 갱신)
   - 종합 D-7 체크리스트
   - 네이버 블로그 후기 기반 맞춤 일정 추천
-를 제공한다. (다국가 확장은 v2 로드맵)
+를 제공한다.
 
 [모듈 구조] — 의존 방향: tb_config ← tb_api ← tb_helpers ← tb_scheduler ← 이 파일
   - tb_config.py    설정 파일 로더 + 전역 상수 (config/, data/ JSON)
@@ -28,8 +28,9 @@ Travel Briefing(트래블 브리핑) MCP 서버 - v9 (PlayMCP 가이드 2026.06.
 """
 
 from __future__ import annotations
-from typing import Literal, Optional
+from typing import Any, Callable, Literal, Optional
 from datetime import date, datetime
+import inspect
 import os
 
 from mcp.server.fastmcp import FastMCP
@@ -56,15 +57,63 @@ mcp = FastMCP(
     "travel-briefing",
     host=os.getenv("TB_HOST", "127.0.0.1"),
     port=int(os.getenv("TB_PORT", "8000")),
+    json_response=True,
+    stateless_http=True,
 )
 
 _READONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
+
+# docstring 에서 국문 내부 문서가 시작되는 지점 (CLAUDE.md 주석 컨벤션 기준)
+#   영문 description(가이드·PlayMCP 노출용) → 국문 '- 함수 설명' / '### Args' / '### Returns'
+_DOC_INTERNAL_MARKERS = ("- ", "###")
+
+
+def _public_description(fn: Callable) -> str:
+    """
+    Extracts the English lead paragraph of a docstring as the public tool description.
+
+    - docstring 에서 PlayMCP 에 노출할 영문 description 만 추출하는 함수
+      국문 설명·Args·Returns 는 개발자용 내부 문서이므로 등록 description 에서 제외한다
+      (노출 품질 + 1,024자 제한 + 호출 토큰 절감).
+    ### Args:
+      - fn(Callable): 툴 함수
+    ### Returns:
+      - description(str): 영문 설명 한 단락 (공백 정규화)
+    """
+    doc = inspect.getdoc(fn) or ""
+    lines: list[str] = []
+    for raw in doc.splitlines():
+        line = raw.strip()
+        if line.startswith(_DOC_INTERNAL_MARKERS):
+            break
+        lines.append(line)
+    return " ".join(l for l in lines if l).strip()
+
+
+def tool(**kwargs: Any) -> Callable:
+    """
+    Registers an MCP tool whose description carries only the English paragraph.
+
+    - mcp.tool 래퍼 — description 을 _public_description 결과로 고정 등록하는 데코레이터
+      (docstring 은 한 벌만 유지하고, 배포 노출용 설명만 자동으로 분리)
+    ### Args:
+      - kwargs(Any): mcp.tool 에 그대로 전달할 인자 (annotations 등)
+    ### Returns:
+      - decorator(Callable): 툴 등록 데코레이터
+    """
+    def decorator(fn: Callable) -> Callable:
+        description = _public_description(fn)
+        if not description:
+            # 빈 description 을 넘기면 FastMCP 가 docstring 전체로 폴백해 국문 내부 문서가 노출됨
+            raise ValueError(f"{fn.__name__}: docstring 첫 단락에 영문 description 이 필요합니다")
+        return mcp.tool(description=description, **kwargs)(fn)
+    return decorator
 
 
 # ===========================================================================
 # 툴 7개
 # ===========================================================================
-@mcp.tool(annotations={"title": "Trip Briefing", "openWorldHint": True, **_READONLY})
+@tool(annotations={"title": "Trip Briefing", "openWorldHint": True, **_READONLY})
 def get_trip_briefing(country: SupportedCountry) -> str:
     """
     Retrieves pre-trip essentials (visa from MOFA API, voltage, time difference,
@@ -89,12 +138,12 @@ def get_trip_briefing(country: SupportedCountry) -> str:
     return _render_briefing_md(country, static, visa, embassy) + visa_warning
 
 
-@mcp.tool(annotations={"title": "Current Status", "openWorldHint": True, **_READONLY})
+@tool(annotations={"title": "Current Status", "openWorldHint": True, **_READONLY})
 def get_current_status(country: SupportedCountry) -> str:
     """
-    Retrieves the current travel-advisory level, official safety notices, and
-    recent news headlines for a destination from Travel Briefing(트래블 브리핑).
-    Returns raw signals only; the calling LLM should synthesize the overall situation.
+    Retrieves the current MOFA travel-advisory level, effective date, and regional
+    advisory note for a destination from Travel Briefing(트래블 브리핑). The calling
+    LLM should use these official signals when explaining the overall situation.
 
     - 외교부 여행경보 단계와 발효일을 반환하는 함수(뉴스는 v1 미포함)
     ### Args:
@@ -106,7 +155,7 @@ def get_current_status(country: SupportedCountry) -> str:
     return _render_alert_md(country, alert)
 
 
-@mcp.tool(annotations={"title": "Exchange Rate", "openWorldHint": True, **_READONLY})
+@tool(annotations={"title": "Exchange Rate", "openWorldHint": True, **_READONLY})
 def get_exchange_rate(country: SupportedCountry) -> str:
     """
     Retrieves the current KRW-based exchange rate for a destination's currency
@@ -123,7 +172,7 @@ def get_exchange_rate(country: SupportedCountry) -> str:
     return _render_exchange_md(_STATIC[country], get_exchange_for_country(country))
 
 
-@mcp.tool(annotations={"title": "Flight Season Guide", "openWorldHint": False, **_READONLY})
+@tool(annotations={"title": "Flight Season Guide", "openWorldHint": False, **_READONLY})
 def get_flight_season_guide(country: SupportedCountry, depart_date: str, return_date: str) -> str:
     """
     Provides peak/off-peak season insight, optimal booking-timing tips, and a
@@ -142,7 +191,7 @@ def get_flight_season_guide(country: SupportedCountry, depart_date: str, return_
     return _render_flight_md(country, season, depart_date, return_date, link)
 
 
-@mcp.tool(annotations={"title": "Destinations", "openWorldHint": True, **_READONLY})
+@tool(annotations={"title": "Destinations", "openWorldHint": True, **_READONLY})
 def get_destinations(
     country: SupportedCountry,
     city: Optional[str] = None,
@@ -199,7 +248,7 @@ def get_destinations(
                                    last_reviewed=data.get("last_reviewed", "-"))
 
 
-@mcp.tool(annotations={"title": "Pre-Trip Checklist", "openWorldHint": True, **_READONLY})
+@tool(annotations={"title": "Pre-Trip Checklist", "openWorldHint": True, **_READONLY})
 def compose_checklist(country: SupportedCountry, depart_date: str, return_date: str) -> str:
     """
     Composes a D-7 pre-trip checklist card (copy-paste friendly) by combining the
@@ -283,7 +332,7 @@ def compose_checklist(country: SupportedCountry, depart_date: str, return_date: 
     return "\n".join(lines)
 
 
-@mcp.tool(annotations={"title": "Itinerary Recommendation", "openWorldHint": True, **_READONLY})
+@tool(annotations={"title": "Itinerary Recommendation", "openWorldHint": True, **_READONLY})
 def recommend_itinerary(
     country: SupportedCountry,
     depart_date: str,
@@ -294,28 +343,14 @@ def recommend_itinerary(
     city: Optional[str] = None,
 ) -> str:
     """
-    Recommends a personalized travel itinerary by searching real traveler blog
-    posts via the Naver Blog API from Travel Briefing(트래블 브리핑). Combines the
-    current exchange rate (for budget sense) and country-specific traits (payment apps,
-    dress codes, entry cards) with purpose-based angles — couple trips focus on photo
-    spots and date courses, solo trips on rest or hobby themes, family trips on
-    minimal-movement plans. If purpose is omitted, returns multi-angle suggestions.
-    Supports Japan (main) plus China, Taiwan, Vietnam, Thailand, Philippines,
-    Singapore, Malaysia, and Indonesia.
+    Recommends a personalized itinerary from Travel Briefing(트래블 브리핑) using
+    travel dates, per-person budget, party size, trip purpose, current exchange-rate
+    context, destination traits, and cleaned Naver Blog results. If purpose is omitted,
+    returns several planning angles. Supports JP, CN, TW, VN, TH, PH, SG, MY, and ID.
 
-    - 여행 조건(일정·예산·목적·인원·도시)을 받아 맞춤 추천을 반환하는 함수
-      환율(예산 감각) + 국가별 특징(결제앱·복장·입국카드) + 목적별 방향 + 블로그 후기를 종합.
-      목적 미지정 시 4가지 방향을 모두 보여줘 사용자가 고를 수 있게 함.
-    ### Args:
-      - country(SupportedCountry): 국가 코드 (JP/CN/TW/VN/TH/PH/SG/MY/ID)
-      - depart_date(str): 출국일 'YYYY-MM-DD'
-      - return_date(str): 귀국일 'YYYY-MM-DD'
-      - budget_krw(int): 1인당 예산 (원, 예: 1000000)
-      - purpose(Optional[str]): 여행 목적 'family'|'couple'|'friends'|'solo'. 모르면 생략
-      - num_people(Optional[int]): 여행 인원 수. 모르면 생략
-      - city(Optional[str]): 도시 키 (예: 'tokyo', 'danang'). 미지정 시 국가 전체 검색
-    ### Returns:
-      - md(str): 조건 요약 + 환율 + 목적별 방향 + 국가 특징 + 블로그 후기 마크다운
+    여행 조건과 정제된 블로그 후기를 조합해 맞춤 일정을 마크다운으로 추천합니다.
+    Dates use YYYY-MM-DD; budget_krw is the per-person KRW budget; purpose is one of
+    family, couple, friends, or solo; num_people and city are optional.
     """
     try:
         dep = datetime.strptime(depart_date, "%Y-%m-%d").date()
@@ -333,7 +368,7 @@ def recommend_itinerary(
     )
 
     # 블로그 검색과 환율을 병렬 조회 (환율은 워밍되어 있어 대부분 즉시 반환)
-    f_posts = _fetch_pool.submit(_fetch_naver_blog, query, 10)
+    f_posts = _fetch_pool.submit(_fetch_naver_blog, query, 5)
     f_exch  = _fetch_pool.submit(get_exchange_for_country, country)
     try:
         posts = _filter_by_country(f_posts.result(), country)
@@ -352,8 +387,6 @@ def recommend_itinerary(
 
 
 if __name__ == "__main__":
-    import sys
     # 스케줄 워밍 — 기동 즉시 1회 + 지정 시각마다 환율·MOFA·네이버 선제 갱신
     start_warming()
-    transport = "streamable-http" if "--http" in sys.argv else "stdio"
-    mcp.run(transport=transport)
+    mcp.run(transport="streamable-http")

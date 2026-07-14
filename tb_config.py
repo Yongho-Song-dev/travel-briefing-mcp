@@ -94,7 +94,7 @@ _NAVER_BLOG_URL = _EP.get("naver_blog",   "https://openapi.naver.com/v1/search/b
 
 # --- HTTP·TTL (config/api.json 의 ttl_seconds 에서 관리) ---
 _TTL            = _API_CFG.get("ttl_seconds", {})
-_HTTP_TIMEOUT_S = _API_CFG.get("http_timeout_seconds", 2.5)
+_HTTP_TIMEOUT_S = _API_CFG.get("http_timeout_seconds", 2.0)
 _NEGATIVE_TTL_S = _TTL.get("negative", 60)  # 실패 상태 캐시 — 연속 타임아웃으로 인한 p99 위반 방지
 
 # 비자는 06/18시 워밍 + 13h 유지 (다음 워밍까지 재호출 없음), 경보는 1h 온디맨드 병행
