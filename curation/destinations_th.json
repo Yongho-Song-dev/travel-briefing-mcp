@@ -1,0 +1,105 @@
+{
+  "country": "TH",
+  "schema_version": 1,
+  "last_reviewed": "2026-07-15",
+  "cities": {
+    "bangkok": {
+      "name_ko": "방콕",
+      "name_local": "กรุงเทพฯ",
+      "spots": [
+        {
+          "name_ko": "왕궁·왓 프라깨우",
+          "name_local": "พระบรมมหาราชวัง",
+          "category": "culture",
+          "one_liner": "에메랄드 불상, 방콕 최대 명소",
+          "best_season": [
+            "winter"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "방콕 왕궁"
+        },
+        {
+          "name_ko": "왓 포",
+          "name_local": "วัดโพธิ์",
+          "category": "culture",
+          "one_liner": "46m 와불상, 타이마사지 발상지",
+          "best_season": [
+            "winter"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "왓포 방콕"
+        },
+        {
+          "name_ko": "왓 아룬",
+          "name_local": "วัดอรุณ",
+          "category": "culture",
+          "one_liner": "새벽 사원, 강변 첨탑",
+          "best_season": [
+            "winter"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "왓아룬 방콕"
+        },
+        {
+          "name_ko": "짜뚜짝 주말시장",
+          "name_local": "ตลาดนัดจตุจักร",
+          "category": "shopping",
+          "one_liner": "1.5만 점포 대형 주말 시장",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "짜뚜짝 시장 방콕"
+        },
+        {
+          "name_ko": "카오산 로드",
+          "name_local": "ถนนข้าวสาร",
+          "category": "food",
+          "one_liner": "배낭여행자 거리, 야시장·길거리음식",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "카오산로드 방콕",
+          "preferred_times": [
+            "evening"
+          ]
+        },
+        {
+          "name_ko": "아시아티크",
+          "name_local": "เอเชียทีค",
+          "category": "shopping",
+          "one_liner": "강변 야시장·대관람차",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "아시아티크 방콕"
+        }
+      ]
+    },
+    "chiangmai": {
+      "name_ko": "치앙마이", "name_local": "เชียงใหม่",
+      "spots": [
+        {"name_ko": "도이수텝 (왓 프라탓)", "name_local": "วัดพระธาตุดอยสุเทพ", "category": "culture", "one_liner": "산 위 황금 사원", "best_season": ["winter"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "도이수텝 치앙마이"},
+        {"name_ko": "왓 체디루앙", "name_local": "วัดเจดีย์หลวง", "category": "culture", "one_liner": "올드시티 대형 고찰", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "왓 체디루앙 치앙마이"},
+        {"name_ko": "님만해민", "name_local": "นิมมานเหมินท์", "category": "shopping", "one_liner": "카페·부티크 거리", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "님만해민 치앙마이"},
+        {"name_ko": "코끼리 자연공원", "name_local": "Elephant Nature Park", "category": "nature", "one_liner": "코끼리 보호소 체험", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "코끼리 자연공원 치앙마이"},
+        {"name_ko": "선데이 워킹 스트리트", "name_local": "ถนนคนเดินวันอาทิตย์", "category": "shopping", "one_liner": "일요 야시장·수공예", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "선데이 워킹스트리트 치앙마이"},
+        {"name_ko": "창푸악 야시장", "name_local": "ตลาดช้างเผือก", "category": "food", "one_liner": "북문 먹거리 야시장", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "창푸악 야시장 치앙마이", "preferred_times": ["evening"]}
+      ]
+    }
+  }
+}

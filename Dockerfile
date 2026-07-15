@@ -17,7 +17,9 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY *.py ./
 COPY config/ config/
 COPY data/ data/
-COPY destinations_jp.json embassies.json ./
+# 큐레이션 스팟 (전 9개국 21도시) + 대사관
+COPY curation/ curation/
+COPY embassies.json ./
 
 # 비루트 사용자로 실행 (컨테이너 탈취 시 피해 최소화)
 RUN useradd --create-home --shell /usr/sbin/nologin app && chown -R app:app /app

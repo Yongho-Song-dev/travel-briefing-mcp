@@ -1,0 +1,18 @@
+{
+  "country": "MY",
+  "schema_version": 1,
+  "last_reviewed": "2026-07-15",
+  "cities": {
+    "kualalumpur": {
+      "name_ko": "쿠알라룸푸르", "name_local": "Kuala Lumpur",
+      "spots": [
+        {"name_ko": "페트로나스 트윈타워", "name_local": "Petronas Twin Towers", "category": "culture", "one_liner": "452m 쌍둥이 마천루", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "페트로나스 트윈타워"},
+        {"name_ko": "바투 동굴", "name_local": "Batu Caves", "category": "culture", "one_liner": "석회암 동굴 힌두 사원", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "바투 동굴 쿠알라룸푸르"},
+        {"name_ko": "KL 타워", "name_local": "Menara KL", "category": "culture", "one_liner": "421m 전망 타워", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "KL 타워"},
+        {"name_ko": "자멕 모스크", "name_local": "Masjid Jamek", "category": "culture", "one_liner": "무어양식 강변 모스크", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "자멕 모스크 쿠알라룸푸르"},
+        {"name_ko": "부킷빈탕", "name_local": "Bukit Bintang", "category": "shopping", "one_liner": "쇼핑·먹거리 중심가", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "부킷빈탕 쿠알라룸푸르"},
+        {"name_ko": "센트럴 마켓", "name_local": "Central Market", "category": "food", "one_liner": "재래시장·공예품·먹거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "센트럴 마켓 쿠알라룸푸르", "preferred_times": ["lunch"]}
+      ]
+    }
+  }
+}

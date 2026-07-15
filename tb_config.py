@@ -45,8 +45,8 @@ def today_kst() -> date:
     """
     return datetime.now(KST).date()
 
-# 큐레이션 JSON 이 있는 국가 (get_destinations 가 스팟 단위 목록을 반환)
-CURATED_COUNTRIES = ("JP",)
+# 스팟 큐레이션(destinations_<cc>.json) 이 있는 국가 — 일자별 코스 생성 대상 (전 9개국).
+CURATED_COUNTRIES = ("JP", "VN", "TH", "TW", "PH", "CN", "SG", "MY", "ID")
 
 # ===========================================================================
 # 외부 설정 파일 로더 (config/ + data/)
@@ -112,6 +112,7 @@ _NAVER_BLOG_URL = _EP.get("naver_blog",   "https://openapi.naver.com/v1/search/b
 # --- HTTP·TTL (config/api.json 의 ttl_seconds 에서 관리) ---
 _TTL            = _API_CFG.get("ttl_seconds", {})
 _HTTP_TIMEOUT_S = _API_CFG.get("http_timeout_seconds", 2.0)
+_NAVER_BLOG_DISPLAY = int(_API_CFG.get("naver_blog_display", 10))
 _NEGATIVE_TTL_S = _TTL.get("negative", 60)  # 실패 상태 캐시 — 연속 타임아웃으로 인한 p99 위반 방지
 
 # 비자는 06/18시 워밍 + 13h 유지 (다음 워밍까지 재호출 없음), 경보는 1h 온디맨드 병행
@@ -152,6 +153,7 @@ def city_meta(country: str) -> dict:
 # --- 어휘·레이블 뷰 ---
 _DOMESTIC_KW: list[str]         = _VOCAB.get("domestic_keywords", [])
 _PURPOSE_PLAN: dict[str, dict]  = _VOCAB.get("purpose_plan", {})
+_PLAN_TIMING: dict              = _VOCAB.get("plan_timing", {})
 _PURPOSE_KO: dict[str, str]     = _VOCAB.get("purpose_ko", {})
 _PURPOSE_ANGLE: dict[str, dict] = _VOCAB.get("purpose_angle", {})
 _QUERY_VOCAB: dict[str, Any]    = _VOCAB.get("query", {})

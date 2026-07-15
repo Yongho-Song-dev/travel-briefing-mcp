@@ -30,6 +30,7 @@ from tb_config import (
     logger, today_kst,
     _MOFA_VISA_URL, _MOFA_WARN_URL, _KOREAEXIM_URL, _NAVER_BLOG_URL,
     _HTTP_TIMEOUT_S, _NEGATIVE_TTL_S,
+    _NAVER_BLOG_DISPLAY,
     _MOFA_VISA_TTL_S, _MOFA_ALERT_TTL_S, _EXCHANGE_TTL_S,
     _NAVER_BLOG_TTL_S, _EXTERNAL_JSON_TTL_S,
     _MOFA_COUNTRY_CODE, _LEVEL_NAME, _STATIC,
@@ -110,7 +111,7 @@ _EMBASSY_JSON_URL = os.getenv(
 )
 _DESTINATIONS_JP_URL = os.getenv(
     "TB_DESTINATIONS_JP_URL",
-    "https://raw.githubusercontent.com/Yongho-Song-dev/travel-briefing-mcp/main/destinations_jp.json",
+    "https://raw.githubusercontent.com/Yongho-Song-dev/travel-briefing-mcp/main/curation/destinations_jp.json",
 )
 def _load_bundled_json(filename: str) -> dict:
     """컨테이너에 포함된 JSON 스냅샷을 콜드 스타트용으로 로드한다."""
@@ -126,8 +127,14 @@ def _load_bundled_json(filename: str) -> dict:
 _bundled_embassies = _load_bundled_json("embassies.json")
 _embassy_data: dict[str, dict] = _bundled_embassies.get("countries", _bundled_embassies)
 _embassy_loaded_at: float = time.time() if _embassy_data else 0.0
-_destinations_jp: dict = _load_bundled_json("destinations_jp.json")
+_destinations_jp: dict = _load_bundled_json("curation/destinations_jp.json")
 _destinations_jp_loaded_at: float = time.time() if _destinations_jp else 0.0
+
+# 일본 외 큐레이션 국가 — 번들 스냅샷 고정 (GitHub Raw 24h 갱신은 일본만, 나머지는 재배포로 반영)
+_destinations_others: dict[str, dict] = {
+    cc: _load_bundled_json(f"curation/destinations_{cc.lower()}.json")
+    for cc in ("VN", "TH", "TW", "PH", "CN", "SG", "MY", "ID")
+}
 
 _refresh_lock = threading.Lock()
 
@@ -211,16 +218,19 @@ def get_embassy(country: str) -> dict:
     return _embassy_data.get(country, {})
 
 
-def get_destinations_json() -> dict:
+def get_destinations_json(country: str = "JP") -> dict:
     """
-    - 일본 관광지 큐레이션 JSON 전체를 반환하는 접근자 (stale 시 자동 갱신)
+    - 국가별 관광지 큐레이션 JSON 을 반환하는 접근자
+      일본은 GitHub Raw 24h 갱신(stale 시 자동), 그 외 큐레이션 국가는 번들 스냅샷 고정.
     ### Args:
-      - None
+      - country(str): 국가 코드 (기본 JP)
     ### Returns:
-      - data(dict): destinations_jp.json 파싱 결과. 미로드 시 빈 dict
+      - data(dict): destinations_<cc>.json 파싱 결과. 미큐레이션 국가는 빈 dict
     """
-    _refresh_destinations_jp_if_stale()
-    return _destinations_jp
+    if country == "JP":
+        _refresh_destinations_jp_if_stale()
+        return _destinations_jp
+    return _destinations_others.get(country, {})
 
 
 # ===========================================================================
@@ -299,6 +309,11 @@ def _fetch_mofa_visa(country: str) -> dict:
             "duration_days": _parse_visa_days(item),
             "note": raw_note.replace("\\n", " / ").strip(),
         }
+        # MOFA 응답이 불완전하면(무비자인데 체류일·근거 없음) 정적 폴백에 위임한다.
+        # 실측: 인도네시아는 MOFA 가 무비자로 반환하지만 실제로는 VOA 필요 → data/ID.json 이 정확.
+        if not visa["required"] and visa["duration_days"] is None and len(visa["note"]) <= 1:
+            logger.info("MOFA 비자 응답 불완전 (%s) — 정적 폴백 사용", country)
+            return {}
         result = {"visa": visa}
         _cache.set(cache_key, result, _MOFA_VISA_TTL_S)
         return result
@@ -639,7 +654,7 @@ def _stale_exch(currency: str) -> Optional[dict]:
 # ===========================================================================
 # 5) 네이버 블로그 검색 API (TTL 7h + 스케줄 워밍)
 # ===========================================================================
-def _fetch_naver_blog(query: str, display: int = 5) -> list[dict]:
+def _fetch_naver_blog(query: str, display: int = _NAVER_BLOG_DISPLAY) -> list[dict]:
     """
     - 네이버 블로그 검색 API 로 여행 후기를 검색하는 함수 (TTL 7h)
       description 의 HTML 태그를 제거해 정제된 텍스트로 반환.
@@ -647,7 +662,7 @@ def _fetch_naver_blog(query: str, display: int = 5) -> list[dict]:
       - query(str): 검색 쿼리
       - display(int): 반환할 결과 수 (최대 10)
     ### Returns:
-      - items(list[dict]): [{'title', 'link', 'description', 'bloggername'}] 형태
+      - items(list[dict]): [{'title', 'link', 'description', 'bloggername', 'postdate'}] 형태
     """
     cache_key = f"naver_blog:{query}:{display}"
     cached = _cache.get(cache_key)
@@ -676,13 +691,41 @@ def _fetch_naver_blog(query: str, display: int = 5) -> list[dict]:
         return []
 
     cleaned = []
+    seen_links: set[str] = set()
     for it in items:
-        desc = re.sub(r"<[^>]+>", "", it.get("description", ""))
+        link = it.get("link", "")
+        if link and link in seen_links:
+            continue
+        if link:
+            seen_links.add(link)
         cleaned.append({
-            "title":       re.sub(r"<[^>]+>", "", it.get("title", "")),
-            "link":        it.get("link", ""),
-            "description": desc.strip(),
+            "title":       _clean_snippet(it.get("title", "")),
+            "link":        link,
+            "description": _clean_snippet(it.get("description", "")),
             "bloggername": it.get("bloggername", ""),
+            "postdate":    it.get("postdate", ""),
         })
     _cache.set(cache_key, cleaned, _NAVER_BLOG_TTL_S)
     return cleaned
+
+
+# 해시태그·저작권 표시·장식 문자 — 공백으로 치환하는 노이즈
+_SNIPPET_NOISE = re.compile(r"#\S+|ⓒ\S*|©\S*|[▶►◀◁▲▼■□●○★☆]")
+
+
+def _clean_snippet(text: str) -> str:
+    """
+    - 네이버 검색 스니펫의 노이즈를 제거해 LLM 이 읽기 좋은 텍스트로 만드는 함수
+      LLM 은 블로그 링크를 열지 못하므로 이 스니펫이 유일하게 보는 본문 신호다.
+    ### Args:
+      - text(str): 네이버 API 원본 title/description
+    ### Returns:
+      - text(str): 정제된 텍스트
+    """
+    # 검색어 강조 태그(<b>키워드</b>)는 빈 문자로 제거 — 조사가 분리되지 않도록
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)                    # &gt; &amp; 등
+    text = _SNIPPET_NOISE.sub(" ", text)          # 해시태그·저작권·장식 문자
+    text = re.sub(r"\s*\.\.\.\s*", "… ", text)    # 잘림 표시 정규화
+    text = re.sub(r"\s+", " ", text)
+    return text.strip(" .·…-<>")

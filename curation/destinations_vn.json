@@ -1,0 +1,107 @@
+{
+  "country": "VN",
+  "schema_version": 1,
+  "last_reviewed": "2026-07-15",
+  "cities": {
+    "danang": {
+      "name_ko": "다낭",
+      "name_local": "Đà Nẵng",
+      "spots": [
+        {
+          "name_ko": "미케 비치",
+          "name_local": "Bãi biển Mỹ Khê",
+          "category": "nature",
+          "one_liner": "다낭 대표 해변, 3km 백사장",
+          "best_season": [
+            "summer",
+            "autumn"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "미케비치 다낭"
+        },
+        {
+          "name_ko": "바나힐",
+          "name_local": "Bà Nà Hills",
+          "category": "nature",
+          "one_liner": "골든브릿지·프랑스마을, 케이블카",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "바나힐 다낭"
+        },
+        {
+          "name_ko": "오행산",
+          "name_local": "Ngũ Hành Sơn",
+          "category": "culture",
+          "one_liner": "석회암 다섯 산, 동굴 사원",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "오행산 다낭"
+        },
+        {
+          "name_ko": "다낭 대성당",
+          "name_local": "Nhà thờ Chính tòa Đà Nẵng",
+          "category": "culture",
+          "one_liner": "핑크빛 프랑스식 성당",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "다낭 대성당"
+        },
+        {
+          "name_ko": "한 시장",
+          "name_local": "Chợ Hàn",
+          "category": "food",
+          "one_liner": "재래시장, 먹거리·기념품",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "한 시장 다낭",
+          "preferred_times": [
+            "morning",
+            "lunch"
+          ]
+        },
+        {
+          "name_ko": "용교",
+          "name_local": "Cầu Rồng",
+          "category": "culture",
+          "one_liner": "주말 밤 불·물 쇼 다리",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "용다리 다낭"
+        }
+      ]
+    },
+    "nhatrang": {
+      "name_ko": "나트랑", "name_local": "Nha Trang",
+      "spots": [
+        {"name_ko": "나트랑 비치", "name_local": "Bãi biển Nha Trang", "category": "nature", "one_liner": "6km 시내 해변", "best_season": ["summer", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "나트랑 비치"},
+        {"name_ko": "빈원더스", "name_local": "VinWonders", "category": "nature", "one_liner": "케이블카로 가는 섬 테마파크", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "빈원더스 나트랑"},
+        {"name_ko": "포나가르 탑", "name_local": "Tháp Bà Ponagar", "category": "culture", "one_liner": "참파 왕국 힌두 사원", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "포나가르 탑 나트랑"},
+        {"name_ko": "나트랑 대성당", "name_local": "Nhà thờ Núi", "category": "culture", "one_liner": "고딕 석조 성당", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "나트랑 대성당"},
+        {"name_ko": "탑바 머드 스파", "name_local": "Tắm bùn Tháp Bà", "category": "nature", "one_liner": "머드·온천 스파", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "탑바 머드 스파 나트랑"},
+        {"name_ko": "담 시장", "name_local": "Chợ Đầm", "category": "food", "one_liner": "나트랑 최대 재래시장", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "담 시장 나트랑", "preferred_times": ["morning", "lunch"]}
+      ]
+    }
+  }
+}

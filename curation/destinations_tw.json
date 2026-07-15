@@ -1,0 +1,105 @@
+{
+  "country": "TW",
+  "schema_version": 1,
+  "last_reviewed": "2026-07-15",
+  "cities": {
+    "taipei": {
+      "name_ko": "타이베이",
+      "name_local": "台北",
+      "spots": [
+        {
+          "name_ko": "타이베이 101",
+          "name_local": "台北101",
+          "category": "culture",
+          "one_liner": "509m 전망대·쇼핑몰",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "타이베이 101"
+        },
+        {
+          "name_ko": "국립고궁박물원",
+          "name_local": "國立故宮博物院",
+          "category": "culture",
+          "one_liner": "70만 점 중화 유물",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "국립고궁박물원 타이베이"
+        },
+        {
+          "name_ko": "지우펀",
+          "name_local": "九份",
+          "category": "culture",
+          "one_liner": "홍등 골목, 산비탈 옛거리",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "지우펀"
+        },
+        {
+          "name_ko": "스린 야시장",
+          "name_local": "士林夜市",
+          "category": "food",
+          "one_liner": "타이베이 최대 야시장",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "스린야시장 타이베이",
+          "preferred_times": [
+            "evening"
+          ]
+        },
+        {
+          "name_ko": "룽산사",
+          "name_local": "龍山寺",
+          "category": "culture",
+          "one_liner": "1738년 도교·불교 사원",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "룽산사 타이베이"
+        },
+        {
+          "name_ko": "시먼딩",
+          "name_local": "西門町",
+          "category": "shopping",
+          "one_liner": "젊음의 거리, 홍루·패션",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "시먼딩 타이베이"
+        }
+      ]
+    },
+    "kaohsiung": {
+      "name_ko": "가오슝", "name_local": "高雄",
+      "spots": [
+        {"name_ko": "롄츠탄 (연지담)", "name_local": "蓮池潭", "category": "culture", "one_liner": "용호탑·춘추각 호수", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "롄츠탄 가오슝"},
+        {"name_ko": "포광산 불타기념관", "name_local": "佛光山佛陀紀念館", "category": "culture", "one_liner": "대형 불교 성지", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "포광산 불타기념관"},
+        {"name_ko": "시쯔완", "name_local": "西子灣", "category": "nature", "one_liner": "항구 노을·해변", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "시쯔완 가오슝"},
+        {"name_ko": "보얼 예술특구", "name_local": "駁二藝術特區", "category": "culture", "one_liner": "항만 창고 예술구", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "보얼 예술특구 가오슝"},
+        {"name_ko": "치진섬", "name_local": "旗津", "category": "nature", "one_liner": "페리로 가는 섬·해산물", "best_season": ["summer"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "치진섬 가오슝"},
+        {"name_ko": "리우허 야시장", "name_local": "六合夜市", "category": "food", "one_liner": "가오슝 대표 야시장", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "리우허 야시장 가오슝", "preferred_times": ["evening"]}
+      ]
+    }
+  }
+}

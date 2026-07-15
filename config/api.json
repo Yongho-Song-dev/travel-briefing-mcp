@@ -14,6 +14,7 @@
     "negative":         60
   },
   "http_timeout_seconds": 2.0,
+  "naver_blog_display": 10,
   "warm_schedule": {
     "koreaexim":  [0, 6, 10, 12, 14, 18, 20],
     "mofa":       [6, 18],

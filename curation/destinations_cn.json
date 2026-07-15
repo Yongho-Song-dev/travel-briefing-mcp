@@ -1,0 +1,29 @@
+{
+  "country": "CN",
+  "schema_version": 1,
+  "last_reviewed": "2026-07-15",
+  "cities": {
+    "beijing": {
+      "name_ko": "베이징", "name_local": "北京",
+      "spots": [
+        {"name_ko": "자금성 (고궁)", "name_local": "故宫", "category": "culture", "one_liner": "명·청 황궁, 세계 최대 궁궐", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "자금성 베이징"},
+        {"name_ko": "만리장성 (바다링)", "name_local": "八达岭长城", "category": "culture", "one_liner": "세계문화유산, 대표 장성 구간", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "바다링 만리장성"},
+        {"name_ko": "천안문 광장", "name_local": "天安门广场", "category": "culture", "one_liner": "세계 최대 도심 광장", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "천안문 광장"},
+        {"name_ko": "이화원", "name_local": "颐和园", "category": "nature", "one_liner": "황실 정원과 쿤밍호", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "이화원 베이징"},
+        {"name_ko": "천단공원", "name_local": "天坛", "category": "culture", "one_liner": "명·청 제천단, 원형 기년전", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "천단공원 베이징"},
+        {"name_ko": "왕푸징 거리", "name_local": "王府井", "category": "food", "one_liner": "중심 상업거리·먹거리", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "왕푸징 베이징", "preferred_times": ["lunch", "evening"]}
+      ]
+    },
+    "shanghai": {
+      "name_ko": "상하이", "name_local": "上海",
+      "spots": [
+        {"name_ko": "와이탄 (외탄)", "name_local": "外滩", "category": "culture", "one_liner": "황푸강변 만국건축·야경", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "와이탄 상하이"},
+        {"name_ko": "동방명주", "name_local": "东方明珠", "category": "culture", "one_liner": "468m 방송탑·전망대", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "동방명주 상하이"},
+        {"name_ko": "예원", "name_local": "豫园", "category": "culture", "one_liner": "명대 강남 정원", "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "예원 상하이"},
+        {"name_ko": "상하이 디즈니랜드", "name_local": "上海迪士尼", "category": "nature", "one_liner": "중국 최대 테마파크", "best_season": ["spring", "autumn"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "상하이 디즈니랜드"},
+        {"name_ko": "티엔즈팡", "name_local": "田子坊", "category": "shopping", "one_liner": "골목 예술·공방 거리", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "티엔즈팡 상하이"},
+        {"name_ko": "난징루", "name_local": "南京路", "category": "food", "one_liner": "보행자 상업거리·먹거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "난징루 상하이", "preferred_times": ["lunch", "evening"]}
+      ]
+    }
+  }
+}

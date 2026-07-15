@@ -36,7 +36,8 @@ import os
 from mcp.server.fastmcp import FastMCP
 
 from tb_config import (
-    SupportedCountry, CURATED_COUNTRIES, _STATIC, _PURPOSE_KO, city_meta, today_kst,
+    SupportedCountry, CURATED_COUNTRIES, _STATIC, _PURPOSE_KO, _NAVER_BLOG_DISPLAY,
+    city_meta, today_kst,
 )
 from tb_api import (
     _fetch_pool,
@@ -45,6 +46,7 @@ from tb_api import (
 )
 from tb_helpers import (
     _filter_by_country, _build_naver_query, _judge_season, _build_skyscanner_link,
+    resolve_city_key,
     _exchange_line, resolve_trip_dates,
     _render_alert_md, _render_exchange_md, _render_briefing_md,
     _render_flight_md, _render_destinations_md, _render_city_guide_md,
@@ -240,36 +242,32 @@ def get_destinations(
     ### Returns:
       - md(str): 도시·스팟을 정제된 마크다운으로 반환. under_renovation 인 곳은 표시.
     """
-    # 큐레이션 JSON 이 없는 국가 → city_meta 기반 도시 가이드
-    if country not in CURATED_COUNTRIES:
+    if city:
+        resolved_city = resolve_city_key(country, city)
+        if not resolved_city:
+            supported = ", ".join(city_meta(country))
+            return f"> 지원하지 않는 도시입니다: `{city}`\n> 지원 도시 키: {supported}"
+        city = resolved_city
+
+    data = get_destinations_json(country) if country in CURATED_COUNTRIES else {}
+    curated_cities = data.get("cities", {})
+
+    # 도시 미지정 → city_meta 기반 도시 목록 (스팟 유무와 무관하게 전 도시 안내)
+    if not city:
         return _render_city_guide_md(country, category_hint=category)
 
-    data = get_destinations_json()
-    cities_meta = city_meta(country)
+    # 도시 지정 + 그 도시에 스팟 큐레이션이 있으면 → 스팟 단위 목록
+    city_data = curated_cities.get(city)
+    if city_data:
+        spots = city_data["spots"]
+        if category:
+            spots = [s for s in spots if s["category"] == category]
+        return _render_destinations_md(city_data, spots, category,
+                                       last_reviewed=data.get("last_reviewed", "-"),
+                                       country=country)
 
-    if not city:
-        cities = data.get("cities", {})
-        lines = [f"# {_STATIC[country]['name_ko']} 대표 도시 가이드\n"]
-        for key, c in cities.items():
-            meta = cities_meta.get(key, {})
-            tags     = "·".join(meta.get("tags", [])[:3])
-            best_for = "·".join(_PURPOSE_KO.get(p, p) for p in meta.get("best_for", []))
-            lines.append(
-                f"- **{c['name_ko']}** ({c['name_local']})  `city='{key}'`\n"
-                f"  - 특징: {tags or '-'}  |  추천: {best_for or '-'}"
-            )
-        lines.append("\n> 도시를 지정하면 카테고리별 스팟 목록을 보여드립니다.")
-        return "\n".join(lines)
-
-    city_data = data.get("cities", {}).get(city)
-    if not city_data:
-        return f"> 지원하지 않는 도시 키입니다: `{city}`"
-
-    spots = city_data["spots"]
-    if category:
-        spots = [s for s in spots if s["category"] == category]
-    return _render_destinations_md(city_data, spots, category,
-                                   last_reviewed=data.get("last_reviewed", "-"))
+    # 스팟이 없는 도시(부분 큐레이션 국가의 미큐레이션 도시) → 단일 도시 가이드로 폴백
+    return _render_city_guide_md(country, category_hint=category, city=city)
 
 
 @tool(annotations={"title": "Pre-Trip Checklist", "openWorldHint": True, **_READONLY})
@@ -335,7 +333,11 @@ def compose_checklist(
         lines.append("출국일이 지났습니다.\n")
 
     # 요약 카드 (단톡방 붙여넣기용)
-    visa_txt = f"무비자 {visa.get('duration_days','?')}일" if not visa.get("required") else "비자 필요"
+    if visa.get("required"):
+        visa_txt = "비자 필요"
+    else:
+        _days = visa.get("duration_days")
+        visa_txt = f"무비자 {_days}일" if _days else "무비자"
     lines.append("## 📋 요약")
     lines.append(f"- **비자**: {visa_txt}")
     lines.append(f"- **여행경보**: {alert['level_name']} (레벨 {alert['level']}, 발효 {alert['issued_at']})")
@@ -386,14 +388,21 @@ def recommend_itinerary(
     Use this whenever the user asks where to go, what to do, or for a trip plan or
     itinerary for a supported country (JP, CN, TW, VN, TH, PH, SG, MY, ID) — for example
     "9월에 친구들이랑 오사카 4박5일 어디 가면 좋을까?". Recommends a personalized itinerary
-    from Travel Briefing(트래블 브리핑) by combining a day-by-day route of curated spots
-    (with Kakao Map links), the current exchange rate, country-specific travel traits,
-    purpose-based planning angles, and real traveler blog reviews. When city is given,
-    returns an actual day-by-day course you can flesh out with times and meals.
+    from Travel Briefing(트래블 브리핑) by combining the current exchange rate,
+    country-specific travel traits, purpose-based planning angles, and real traveler blog
+    reviews. Japan city requests also include a day-by-day route of curated spots with
+    Kakao Map links; other countries currently provide city-level guidance and reviews.
     Only country is required. Never ask the user for exact dates first: pass whatever the
     user gave (month such as 9, nights such as 4, or exact YYYY-MM-DD dates) and the tool
     fills in the rest. purpose is one of family, couple, friends, solo.
     """
+    if city:
+        resolved_city = resolve_city_key(country, city)
+        if not resolved_city:
+            supported = ", ".join(city_meta(country))
+            return f"> 지원하지 않는 도시입니다: `{city}`\n> 지원 도시 키: {supported}"
+        city = resolved_city
+
     d = resolve_trip_dates(depart_date, return_date, month, nights)
     dep, ret, n = d["depart"], d["return"], d["nights"]
 
@@ -401,7 +410,7 @@ def recommend_itinerary(
     # (블로그 발췌 60자만으로는 동선을 만들 재료가 없음)
     spots: list[dict] = []
     if city and country in CURATED_COUNTRIES:
-        spots = get_destinations_json().get("cities", {}).get(city, {}).get("spots", [])
+        spots = get_destinations_json(country).get("cities", {}).get(city, {}).get("spots", [])
 
     budget_str = f"{budget_krw // 10000}만원" if budget_krw else None
     nights_str = f"{n}박{n + 1}일"
@@ -410,23 +419,52 @@ def recommend_itinerary(
         budget_krw=budget_krw, depart_month=dep.month, city=city,
     )
 
-    # 블로그 검색과 환율을 병렬 조회 (환율은 워밍되어 있어 대부분 즉시 반환)
-    f_posts = _fetch_pool.submit(_fetch_naver_blog, query, 5)
+    # "일정 짜줘" 한 번에 출발 전 필수 정보(비자·안전·환율)까지 함께 제공한다.
+    # MCP 는 툴 하나만 호출되므로, 여행 질문이 곧 종합 브리핑이 되도록 병렬 조회.
+    # (전부 스케줄 워밍되어 있어 대부분 캐시 히트 → 지연 없음)
+    # display 는 워밍(_warm_naver_blog_once)과 동일하게 10 — 다르면 캐시 키가 어긋나 워밍 무효
+    f_posts = _fetch_pool.submit(_fetch_naver_blog, query, _NAVER_BLOG_DISPLAY)
     f_exch  = _fetch_pool.submit(get_exchange_for_country, country)
+    f_visa  = _fetch_pool.submit(_fetch_mofa_visa, country)
+    f_alert = _fetch_pool.submit(_fetch_mofa_alert, country)
+    # 도시 지정 시 '가볼만한곳' 관광 후기도 병렬 조회 (워밍되어 캐시 히트) — 언급 집계 신호 보강
+    f_sight = None
+    if city:
+        cm = city_meta(country).get(city, {})
+        city_ko = cm.get("name_ko", city)
+        place = city_ko if city_ko == _STATIC[country]["name_ko"] else f"{_STATIC[country]['name_ko']} {city_ko}"
+        f_sight = _fetch_pool.submit(_fetch_naver_blog, f"{place} 가볼만한곳", _NAVER_BLOG_DISPLAY)
     try:
         posts = _filter_by_country(f_posts.result(), country)
     except Exception:
         posts = []
+    # 관광 후기를 뒤에 합산 (중복 링크 제거) — 표시는 상위 5건이라 목적 후기 우선, 집계는 강화
+    if f_sight is not None:
+        try:
+            seen = {p["link"] for p in posts}
+            posts += [p for p in _filter_by_country(f_sight.result(), country)
+                      if p.get("link") and p["link"] not in seen]
+        except Exception:
+            pass
     try:
         exch = f_exch.result()
     except Exception:
         exch = None
+    try:
+        visa = f_visa.result().get("visa") or _STATIC[country]["visa_static"]
+    except Exception:
+        visa = _STATIC[country]["visa_static"]
+    try:
+        alert = f_alert.result()
+    except Exception:
+        alert = None
+    season = _judge_season(country, dep.isoformat())   # 외부 호출 없음
 
     return _render_itinerary_md(
         country, query, posts, dep.isoformat(), ret.isoformat(),
         budget_str, purpose, num_people, nights_str, city,
         exch=exch, depart_month=dep.month, estimated=d["estimated"],
-        spots=spots, nights=n,
+        spots=spots, nights=n, visa=visa, alert=alert, season=season,
     )
 
 

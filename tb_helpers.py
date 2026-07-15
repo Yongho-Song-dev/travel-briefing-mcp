@@ -8,18 +8,99 @@ tb_api 를 임포트하지 않는다 (렌더러에 필요한 동적 값은 인�
 from __future__ import annotations
 from typing import Optional
 from datetime import date, datetime, timedelta
+import re
 
 from tb_config import (
     _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW, _DOMESTIC_KW,
-    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _QUERY_VOCAB,
+    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PLAN_TIMING, _QUERY_VOCAB,
     city_meta, today_kst,
 )
+
+
+def _map_link(country: str, query: str) -> str:
+    """
+    - 스팟 지도 링크를 국가에 맞는 지도 서비스로 생성하는 함수
+      일본은 카카오맵(한국인 익숙 + 일본 커버 양호), 그 외는 구글맵(전 세계 커버).
+    ### Args:
+      - country(str): 국가 코드
+      - query(str): 검색어 (search_query)
+    ### Returns:
+      - url(str): 지도 검색 URL
+    """
+    from urllib.parse import quote
+    if country == "JP":
+        return f"https://map.kakao.com/?q={query}"
+    return f"https://www.google.com/maps/search/{quote(query)}"
+
+
+def _dwell_hint(spot: dict) -> str:
+    """
+    - 스팟의 예상 체류시간을 사람이 읽는 문구로 만드는 함수
+      스팟에 visit_min 이 있으면 우선, 없으면 카테고리 기본값(분).
+    ### Args:
+      - spot(dict): 큐레이션 스팟
+    ### Returns:
+      - hint(str): '약 1시간 30분' 형태. 데이터 없으면 빈 문자열
+    """
+    m = spot.get("visit_min") or _PLAN_TIMING.get("dwell_min", {}).get(spot.get("category"))
+    if not m:
+        return ""
+    h, mm = divmod(int(m), 60)
+    if h and mm:
+        return f"약 {h}시간 {mm}분"
+    return f"약 {h}시간" if h else f"약 {mm}분"
+
+
+def _transit_hint(prev: Optional[dict], cur: dict) -> str:
+    """
+    - 두 스팟 사이의 대략적 이동 힌트를 만드는 함수
+      정밀 매트릭스 대신 구역(area) 동일 여부로 근사한다 — 같은 구역은 도보,
+      다른 구역은 대중교통. area 가 없는 스팟이면 힌트를 생략(빈 문자열).
+    ### Args:
+      - prev(Optional[dict]): 직전 스팟 (없으면 첫 방문지)
+      - cur(dict): 현재 스팟
+    ### Returns:
+      - hint(str): 같은 구역/다른 구역의 정성적 이동 안내 또는 판단 불가 시 빈 문자열
+    """
+    if not prev:
+        return ""
+    a1, a2 = prev.get("area"), cur.get("area")
+    if not a1 or not a2:
+        return ""
+    if a1 == a2:
+        return "🚶 같은 구역 · 도보 이동권"
+    return "🚇 다른 구역 · 대중교통 이동 필요"
 
 
 # ===========================================================================
 # 1) 검색·판정 헬퍼
 # ===========================================================================
 _SEASON_KO = {"spring": "봄", "summer": "여름", "autumn": "가을", "winter": "겨울"}
+
+
+def _city_token(value: str) -> str:
+    """도시 키 비교용으로 공백·구분기호와 대소문자를 정규화한다."""
+    return re.sub(r"[\s·._-]+", "", value).casefold()
+
+
+def resolve_city_key(country: str, city: Optional[str]) -> Optional[str]:
+    """
+    - 내부 키·한국어명·현지어 도시명을 내부 도시 키로 변환하는 함수
+    ### Args:
+      - country(str): 국가 코드
+      - city(Optional[str]): 사용자 또는 호스트 LLM 이 전달한 도시명
+    ### Returns:
+      - key(Optional[str]): 일치한 내부 키. 입력이 없거나 일치하지 않으면 None
+    """
+    if not city:
+        return None
+    wanted = _city_token(city)
+    for key, meta in city_meta(country).items():
+        candidates = [key, meta.get("name_ko", ""), meta.get("name_local", "")]
+        candidates.extend(meta.get("aliases", []))
+        if wanted in {_city_token(v) for v in candidates if v}:
+            return key
+    return None
 
 
 def _kw_score(title: str, body: str, keywords: list[str]) -> int:
@@ -301,7 +382,11 @@ def _render_briefing_md(country: str, static: dict, visa: dict, embassy: dict) -
       - md(str): 가이드 권장에 따른 정제 마크다운(과도한 raw 데이터 제외)
     """
     s = static
-    visa_line = f"무비자 {visa['duration_days']}일" if not visa.get("required") else "비자 필요"
+    if visa.get("required"):
+        visa_line = "비자 필요"
+    else:
+        days = visa.get("duration_days")
+        visa_line = f"무비자 {days}일" if days else "무비자"
     note = visa.get("note", "")
     plugs = "/".join(s["plug"])
     tz = s["tz_offset_h"]
@@ -364,7 +449,7 @@ _CATEGORY_LABEL = {
 
 def _render_destinations_md(
     city_data: dict, spots: list[dict], category_filter: Optional[str],
-    last_reviewed: str = "-",
+    last_reviewed: str = "-", country: str = "JP",
 ) -> str:
     """
     - 도시 스팟 목록을 카카오맵 검색 링크와 상태 배지 포함해 마크다운으로 렌더링하는 함수
@@ -400,11 +485,15 @@ def _render_destinations_md(
         for s in items:
             badges = []
             if s.get("status") == "under_renovation":
-                badges.append("🚧 리뉴얼/재건 중")
+                reopen = s.get("reopen_date")
+                badge = "🚧 리뉴얼/재건 중"
+                if reopen:
+                    badge += f" (일반 공개 예정 {reopen})"
+                badges.append(badge)
             elif s.get("status") == "seasonal":
                 badges.append("🗓 시즌 한정")
             badge_str = f" {' '.join(badges)}" if badges else ""
-            kakao_link = f"https://map.kakao.com/?q={s['search_query']}"
+            kakao_link = _map_link(country, s["search_query"])
             lines.append(
                 f"- **{s['name_ko']}** ({s['name_local']}){badge_str}\n"
                 f"  - {s['one_liner']}\n"
@@ -417,13 +506,18 @@ def _render_destinations_md(
     return "\n".join(lines)
 
 
-def _render_city_guide_md(country: str, category_hint: Optional[str] = None) -> str:
+def _render_city_guide_md(
+    country: str,
+    category_hint: Optional[str] = None,
+    city: Optional[str] = None,
+) -> str:
     """
     - 큐레이션 JSON 이 없는 국가의 도시 가이드를 city_meta 로 렌더링하는 함수
       (JP 는 스팟 단위 큐레이션, 그 외 국가는 도시 단위 가이드 + 시즌 하이라이트)
     ### Args:
       - country(str): 국가 코드
       - category_hint(Optional[str]): 카테고리 필터 요청 시 안내 문구용
+      - city(Optional[str]): 내부 도시 키. 지정하면 해당 도시만 표시
     ### Returns:
       - md(str): 도시별 특징·추천대상·시즌 하이라이트 마크다운
     """
@@ -433,8 +527,14 @@ def _render_city_guide_md(country: str, category_hint: Optional[str] = None) -> 
         return (f"# {static['name_ko']} 도시 가이드\n\n"
                 f"> 아직 도시 데이터가 준비되지 않았습니다.")
 
-    lines = [f"# {static['name_ko']} 대표 도시 가이드", ""]
-    for key, m in cities.items():
+    selected_city = city if city in cities else None
+    selected = {selected_city: cities[selected_city]} if selected_city else cities
+    title = (
+        f"{selected[selected_city]['name_ko']} 도시 가이드"
+        if selected_city else f"{static['name_ko']} 대표 도시 가이드"
+    )
+    lines = [f"# {title}", ""]
+    for key, m in selected.items():
         tags     = "·".join(m.get("tags", [])[:4])
         best_for = "·".join(_PURPOSE_KO.get(p, p) for p in m.get("best_for", []))
         lines.append(f"## {m['name_ko']} ({m['name_local']})  `city='{key}'`")
@@ -507,19 +607,26 @@ def _render_city_picks_md(
     return lines
 
 
-def _pick_spots_for_purpose(spots: list[dict], purpose: Optional[str], want: int) -> list[dict]:
+def _pick_spots_for_purpose(
+    spots: list[dict], purpose: Optional[str], want: int,
+    mentions: Optional[dict[str, int]] = None,
+) -> list[dict]:
     """
     - 목적에 맞는 카테고리 우선순위로 스팟을 고르는 함수
       폐업 리스크가 낮은 landmark 를 앞세우고, 카테고리를 번갈아 담아 하루가 단조롭지 않게 한다.
+      블로그 언급 수(mentions)가 있으면 카테고리 내에서 요즘 많이 언급된 곳을 앞세워
+      같은 도시라도 시즌마다 코스가 미묘하게 달라지게 한다 (동적성).
     ### Args:
       - spots(list[dict]): 도시의 전체 스팟
       - purpose(Optional[str]): 여행 목적. None 이면 기본 순서
       - want(int): 필요한 스팟 수
+      - mentions(Optional[dict]): {name_ko: 블로그 언급 수}
     ### Returns:
       - picked(list[dict]): 고른 스팟 (want 개 이하)
     """
     plan  = _PURPOSE_PLAN.get(purpose or "", {})
     order = plan.get("categories") or ["culture", "food", "nature", "shopping", "onsen"]
+    mentions = mentions or {}
 
     # 운영 중단된 곳은 코스에서 제외 (get_destinations 는 뱃지로 표시하지만 코스엔 넣지 않음)
     alive = [s for s in spots if s.get("status") != "under_renovation"]
@@ -527,8 +634,12 @@ def _pick_spots_for_purpose(spots: list[dict], purpose: Optional[str], want: int
     by_cat: dict[str, list[dict]] = {}
     for s in alive:
         by_cat.setdefault(s["category"], []).append(s)
-    for items in by_cat.values():   # landmark 우선 (수십 년 안정)
-        items.sort(key=lambda x: 0 if x.get("stability") == "landmark" else 1)
+    for items in by_cat.values():
+        # 1순위 landmark, 2순위 블로그 언급 많은 순 (동적)
+        items.sort(key=lambda x: (
+            0 if x.get("stability") == "landmark" else 1,
+            -mentions.get(x["name_ko"], 0),
+        ))
 
     picked: list[dict] = []
     while len(picked) < want:
@@ -544,72 +655,311 @@ def _pick_spots_for_purpose(spots: list[dict], purpose: Optional[str], want: int
     return picked
 
 
+def _spot_match_keys(spot: dict) -> set[str]:
+    """
+    - 스팟 하나를 블로그 텍스트에서 찾기 위한 매칭 키 집합을 만드는 함수
+      큐레이션 이름과 블로그 표현이 달라(대사↔신사) 여러 변형으로 매칭한다.
+    ### Args:
+      - spot(dict): 큐레이션 스팟
+    ### Returns:
+      - keys(set[str]): 2자 이상 매칭 키 (전체 이름·괄호 속 이름·명시적 별칭·공백 제거형)
+    """
+    name = spot["name_ko"]
+    base = re.sub(r"\s*\(.*?\)", "", name).strip()
+    parens = re.findall(r"\(([^)]+)\)", name)
+    raw_keys = {base, spot.get("search_query", ""), *parens, *spot.get("aliases", [])}
+    keys = {k.strip().casefold() for k in raw_keys if k and len(k.strip()) >= 2}
+    keys.update(k.replace(" ", "") for k in list(keys))
+    return keys
+
+
+def _count_spot_mentions(posts: list[dict], spots: list[dict]) -> dict[str, int]:
+    """
+    - 블로그 스니펫에서 각 큐레이션 스팟이 몇 번 언급됐는지 집계하는 함수
+      검색 결과는 시즌마다 바뀌므로(가을=단풍 명소, 봄=벚꽃 명소), 같은 도시라도
+      시기에 따라 다른 신호가 나온다 — 정적 큐레이션에 동적 인기도를 결합.
+      (크롤링이 아니라 네이버가 제공하는 검색 요약만 분석 — 저작권 안전)
+    ### Args:
+      - posts(list[dict]): _fetch_naver_blog 결과 (이미 정제됨)
+      - spots(list[dict]): 도시 큐레이션 스팟
+    ### Returns:
+      - mentions(dict): {스팟 name_ko: 언급 횟수} (0 회는 제외)
+    """
+    if not posts or not spots:
+        return {}
+    result: dict[str, int] = {}
+    for s in spots:
+        keys = _spot_match_keys(s)
+        mentioned_posts = 0
+        for post in posts:
+            text = (post.get("title", "") + " " + post.get("description", "")).casefold()
+            compact = re.sub(r"\s+", "", text)
+            if any((key in text) or (key.replace(" ", "") in compact) for key in keys):
+                mentioned_posts += 1
+        if mentioned_posts:
+            result[s["name_ko"]] = mentioned_posts
+    return result
+
+
+def _cluster_spots_by_area(spots: list[dict]) -> list[dict]:
+    """같은 구역의 스팟을 연속 배치하되 구역·스팟의 기존 우선순위는 유지한다."""
+    groups: dict[str, list[dict]] = {}
+    order: list[str] = []
+    for spot in spots:
+        # 구역이 없는 스팟끼리는 입력 순서를 유지하도록 하나의 기본 그룹으로 둔다.
+        area = spot.get("area") or "__unassigned__"
+        if area not in groups:
+            groups[area] = []
+            order.append(area)
+        groups[area].append(spot)
+    return [spot for area in order for spot in groups[area]]
+
+
+def _slot_key(slot: str) -> str:
+    if "오전" in slot:
+        return "morning"
+    if "점심" in slot:
+        return "lunch"
+    if "오후" in slot:
+        return "afternoon"
+    return "evening"
+
+
+def _pop_food_for_slot(foods: list[dict], slot: str, area: Optional[str]) -> Optional[dict]:
+    """시간대 제약을 지키면서 가능하면 직전 스팟과 같은 구역의 식사 후보를 고른다."""
+    key = _slot_key(slot)
+    ranked: list[tuple[int, int, int]] = []
+    for idx, spot in enumerate(foods):
+        preferred = spot.get("preferred_times") or []
+        if isinstance(preferred, str):
+            preferred = [preferred]
+        if preferred and key not in preferred:
+            continue
+        area_penalty = 0 if area and spot.get("area") == area else 1
+        # 낮 일정 한가운데 다른 구역의 시장을 억지로 끼워 넣으면 왕복 동선이 된다.
+        # 같은 구역 점심 후보가 없으면 로컬 식당 슬롯으로 남긴다.
+        if key == "lunch" and area and area_penalty:
+            continue
+        # 같은 시간대만 가능한 장소(아침시장·야타이)를 범용 후보보다 먼저 소진한다.
+        time_penalty = len(preferred) if preferred else 99
+        ranked.append((area_penalty, time_penalty, idx))
+    if not ranked:
+        return None
+    _, _, idx = min(ranked)
+    return foods.pop(idx)
+
+
+def _pop_sight_for_area(sights: list[dict], area: Optional[str]) -> Optional[dict]:
+    """남은 우선순위를 지키되 직전 장소와 같은 구역이 있으면 먼저 고른다."""
+    if not sights:
+        return None
+    if area:
+        for idx, spot in enumerate(sights):
+            if spot.get("area") == area:
+                return sights.pop(idx)
+    return sights.pop(0)
+
+
+def _next_shopping(sights: list[dict], start: int, area: Optional[str] = None) -> Optional[int]:
+    """
+    - 식사 슬롯을 대신 채울 상점가·번화가 스팟의 위치를 찾는 함수
+      먹거리 스팟이 동났을 때 공원·산책로를 '식사' 로 안내하면 어색하므로,
+      식당이 밀집한 shopping 카테고리만 대체 후보로 삼는다.
+    ### Args:
+      - sights(list[dict]): 남은 관광 스팟 목록
+      - start(int): 아직 배치되지 않은 첫 인덱스
+      - area(Optional[str]): 직전 방문 구역. 있으면 같은 구역 후보만 허용
+    ### Returns:
+      - idx(Optional[int]): 대체 가능한 스팟의 인덱스. 없으면 None
+    """
+    for i in range(start, len(sights)):
+        if sights[i]["category"] == "shopping" and (
+            not area or sights[i].get("area") == area
+        ):
+            return i
+    return None
+
+
 def _render_day_plan_md(
     city_ko: str, spots: list[dict], purpose: Optional[str], nights: int,
+    mentions: Optional[dict[str, int]] = None, country: str = "JP",
 ) -> list[str]:
     """
-    - 큐레이션 스팟을 일자별 코스 뼈대로 배치하는 함수
-      호스트 LLM 이 시간·식사·이동 같은 살을 붙일 수 있도록 '재료와 골격'만 제공한다.
-      (서버가 완성된 문장을 쓰지 않는다 — 추론은 호스트 LLM 담당)
+    - 큐레이션 스팟을 '오전·점심·오후·저녁' 시간대에 배치한 일자별 코스를 만드는 함수
+      단순 나열은 LLM 이 살을 붙일 지점을 못 찾는다. 시간대 슬롯을 미리 나눠 두면
+      호스트 LLM 이 각 슬롯에 이동시간·소요시간·식사를 채워 상세 일정으로 확장한다.
+      (개별 식당은 큐레이션하지 않는다 — 폐업 리스크. 시장·먹거리 거리 단위까지만)
     ### Args:
       - city_ko(str): 도시 한글명
       - spots(list[dict]): 도시의 전체 스팟 (destinations JSON)
       - purpose(Optional[str]): 여행 목적
       - nights(int): 숙박 수
+      - mentions(Optional[dict]): 블로그 언급 수 (코스 순서 동적 반영)
     ### Returns:
       - lines(list[str]): 마크다운 라인 목록 (스팟 없으면 빈 리스트)
     """
     if not spots:
         return []
 
-    plan     = _PURPOSE_PLAN.get(purpose or "", {})
-    per_day  = plan.get("spots_per_day", 3)
-    days     = nights + 1
+    plan  = _PURPOSE_PLAN.get(purpose or "", {})
+    days  = nights + 1
 
-    # 첫날은 도착, 마지막 날은 귀국이라 일정을 줄인다
-    quota   = [max(per_day - 1, 1)] + [per_day] * max(days - 2, 0)
-    if days >= 2:
-        quota.append(max(per_day - 1, 1))
+    per_day = plan.get("sights_per_day", 2)
+    # 첫날·마지막날은 1곳, 중간일은 목적별 밀도만큼 배치한다.
+    sight_slots = 1 + per_day * max(days - 2, 0) + (1 if days >= 2 else 0)
+    want = sight_slots + 2  # 종일 일정 후보와 식사 대체 쇼핑 구역을 위한 여유분
 
-    picked = _pick_spots_for_purpose(spots, purpose, sum(quota))
-    if not picked:
+    # 먹거리(시장·먹거리 거리)는 식사 슬롯에, 나머지는 관광·종일 일정 후보로 분리
+    alive  = [s for s in spots if s.get("status") != "under_renovation"]
+    foods  = [s for s in alive if s["category"] == "food" and s.get("meal_slot", True)]
+    picked = _pick_spots_for_purpose(
+        [s for s in alive if s["category"] != "food"], purpose, want, mentions,
+    )
+    day_trips = [s for s in picked if s.get("trip_scope") == "full_day"]
+    sights = _cluster_spots_by_area(
+        [s for s in picked if s.get("trip_scope") != "full_day"]
+    )
+    if not sights and not foods:
         return []
 
-    # 스팟이 요청 일수보다 모자라면 균등 재분배 — 안 그러면 마지막 날이 통째로 빠진다
-    if len(picked) < sum(quota):
-        base, rem = divmod(len(picked), days)
-        quota = [base + (1 if i < rem else 0) for i in range(days)]
-
-    labels = ["도착 · 시내 적응"] + ["핵심 관광"] * max(days - 2, 0)
-    if days >= 2:
-        labels.append("여유롭게 마무리 · 귀국")
+    # 자동 당일치기는 3박 이상일 때 최대 1회만, 첫날·귀국일이 아닌 Day 2에 배치한다.
+    day_trip_day = 1 if days >= 4 and day_trips else None
+    day_trip = day_trips[0] if day_trip_day is not None else None
 
     purpose_ko = _PURPOSE_KO.get(purpose, "") if purpose else ""
     head = f"## 🗓 {nights}박{days}일 코스 제안 ({city_ko}"
     head += f" · {purpose_ko})" if purpose_ko else ")"
     lines = [head]
 
-    idx = 0
     for day in range(days):
-        take = quota[day] if day < len(quota) else per_day
-        todays = picked[idx:idx + take]
-        idx += take
-        lines.append(f"**Day {day + 1}** — {labels[day] if day < len(labels) else '자유 일정'}")
-        if todays:
-            for s in todays:
-                link = f"https://map.kakao.com/?q={s['search_query']}"
-                lines.append(f"- [{s['name_ko']}]({link}) — {s['one_liner']}")
-        else:
-            # 큐레이션 스팟이 일수보다 적은 경우 — 날짜를 빠뜨리지 않고 여백으로 남긴다
-            lines.append("- 자유 일정 (쇼핑·카페·근교 당일치기 등)")
+        first, last = day == 0, day == days - 1
+        label = "도착 · 시내 적응" if first else ("여유롭게 마무리 · 귀국" if last else "핵심 관광")
+        lines.append(f"**Day {day + 1}** — {label}")
+
+        if day == day_trip_day and day_trip:
+            dwell = _dwell_hint(day_trip)
+            dwell_str = f" ({dwell} 소요)" if dwell else ""
+            link = _map_link(country, day_trip["search_query"])
+            lines.append(
+                f"- 🌄 하루 종일 · [{day_trip['name_ko']}]({link}) — "
+                f"{day_trip['one_liner']}{dwell_str}"
+            )
+            lines.append("- 🍽 점심 · 당일치기 지역에서 동선에 맞춰 식사")
+            lines.append("")
+            continue
+
+        # 첫날은 오후부터, 마지막 날은 오전까지 (비행 시간 감안)
+        slots = ["🌅 오전", "🍽 점심", "☀️ 오후"]
+        if per_day >= 3:
+            slots.append("🌆 늦은 오후")
+        slots.append("🌙 저녁")
+        if first:
+            slots = ["☀️ 오후", "🌙 저녁"]
+        elif last:
+            slots = ["🌅 오전", "🍽 점심"]
+
+        prev_spot: Optional[dict] = None    # 하루 시작은 숙소 출발이라 이동힌트 없음
+        for slot in slots:
+            is_meal = "점심" in slot or "저녁" in slot
+            spot: Optional[dict] = None
+            suffix = ""
+            if is_meal:
+                spot = _pop_food_for_slot(
+                    foods, slot, prev_spot.get("area") if prev_spot else None,
+                )
+            if is_meal and spot is None:
+                nxt = _next_shopping(
+                    sights, 0, prev_spot.get("area") if prev_spot else None,
+                )
+                if nxt is not None:
+                    spot = sights.pop(nxt)
+                    suffix = " 일대에서 식사"  # 상점가 (식당 밀집)
+            if is_meal and spot is None:
+                # 개별 식당은 큐레이션 대상이 아니다 — 호스트 LLM 이 채우도록 열어 둔다
+                lines.append(f"- {slot} · 근처 로컬 식당 (동선상 편한 곳으로)")
+                continue
+            if not is_meal and sights:
+                spot = _pop_sight_for_area(
+                    sights, prev_spot.get("area") if prev_spot else None,
+                )
+            elif not is_meal:
+                lines.append(f"- {slot} · 자유 시간 (카페·산책·쇼핑)")
+                continue
+
+            # 직전 방문지와의 대략 이동시간 (구역 기반, 데이터 있을 때만)
+            transit = _transit_hint(prev_spot, spot)
+            if transit:
+                lines.append(f"  ↳ {transit}")
+            dwell = _dwell_hint(spot)
+            dwell_str = f" ({dwell} 소요)" if dwell else ""
+            link = _map_link(country, spot["search_query"])
+            lines.append(f"- {slot} · [{spot['name_ko']}]({link}) — {spot['one_liner']}{suffix}{dwell_str}")
+            prev_spot = spot
         lines.append("")
 
     note = plan.get("note")
     if note:
         lines.append(f"> 💡 {note}")
-    lines.append("> 순서·시간은 숙소 위치에 맞춰 조정하세요. 아래 실제 후기도 함께 참고하시면 좋습니다.")
+    lines.append("> 체류·이동 시간은 대략치입니다. 위 뼈대에 식사 메뉴를 더해 안내해 주세요. "
+                 "숙소 위치에 따라 순서는 조정 가능합니다.")
     lines.append("")
     return lines
+
+
+_ALERT_ICON = {0: "🟢", 1: "🟡", 2: "🟠", 3: "🔴", 4: "⛔"}
+
+
+def _render_essentials_md(
+    exch: Optional[dict], visa: Optional[dict],
+    alert: Optional[dict], season: Optional[dict],
+) -> list[str]:
+    """
+    - 출발 전 필수 정보(비자·안전·환율·시즌)를 한 줄씩 요약하는 함수
+      "일정 짜줘" 한 번에 여행 준비 전체가 보이도록 일정 추천 상단에 얹는다.
+      상세는 각 전용 툴(get_trip_briefing 등)이 담당 — 여기선 요약만.
+    ### Args:
+      - exch(Optional[dict]): get_exchange_for_country 결과
+      - visa(Optional[dict]): 비자 정보 (required, duration_days, note)
+      - alert(Optional[dict]): 여행경보 (level, level_name)
+      - season(Optional[dict]): 시즌 판정 (season, note)
+    ### Returns:
+      - lines(list[str]): 마크다운 라인 목록 (전부 없으면 빈 리스트)
+    """
+    items: list[str] = []
+
+    if visa:
+        if visa.get("required"):
+            items.append(f"- 🛂 **비자**: 사전 발급 필요 — {visa.get('note', '')}".rstrip(" —"))
+        else:
+            days = visa.get("duration_days")
+            items.append(f"- 🛂 **비자**: 무비자{f' {days}일' if days else ''}")
+
+    if alert:
+        icon = _ALERT_ICON.get(alert.get("level", 0), "⚪")
+        line = f"- {icon} **안전**: {alert.get('level_name', '정보 없음')}"
+        if alert.get("level", 0) >= 2:
+            line += " — 방문 전 외교부(0404.go.kr) 확인 권장"
+        items.append(line)
+
+    if exch:
+        exch_line = _exchange_line(exch)
+        if exch_line:
+            items.append(f"- 💱 **환율**: {exch_line}")
+
+    if season:
+        tip = {"peak": "성수기 — 2~3개월 전 예약 권장",
+               "shoulder": "가성비 시즌 — 1~2개월 전 예약",
+               "off": "비수기 — 임박 예약도 가격 안정적"}.get(season.get("season"), "")
+        note = season.get("note", "")
+        # 시즌 규칙 미매칭 폴백 문구는 팁으로 대체 (중복 방지)
+        detail = note if "표시 없음" not in note else tip
+        if note and "표시 없음" not in note and tip:
+            detail = f"{note} ({tip})"
+        items.append(f"- 🗓 **시즌**: {detail}")
+
+    if not items:
+        return []
+    return ["## ✈️ 출발 전 필수 (요약)", *items, ""]
 
 
 def _render_country_traits_md(country: str, city: Optional[str], depart_month: int) -> list[str]:
@@ -654,9 +1004,13 @@ def _render_itinerary_md(
     estimated: bool = False,
     spots: Optional[list[dict]] = None,
     nights: int = 3,
+    visa: Optional[dict] = None,
+    alert: Optional[dict] = None,
+    season: Optional[dict] = None,
 ) -> str:
     """
-    - 블로그 후기 + 목적별 방향 + 환율 + 국가 특징을 정제 마크다운으로 렌더링하는 함수
+    - 출발 전 필수 요약 + 일자별 코스 + 여행 방향 + 국가 특징 + 후기를 종합하는 함수
+      "일정 짜줘" 한 번에 여행 준비 전체가 나오도록 비자·안전·환율·시즌을 상단에 얹는다.
       목적이 있으면 그 목적의 방향 3개, 없으면 4가지 목적의 방향을 모두 제시.
     ### Args:
       - country(str): 국가 코드
@@ -697,12 +1051,11 @@ def _render_itinerary_md(
         lines.append("> 📅 정확한 날짜를 알려주시면 시즌·항공 정보가 더 정확해집니다.")
         lines.append("")
 
-    # 환율 — 현지 물가 감각을 잡는 데 필요 (예산 배분의 기준)
-    if exch:
-        exch_line = _exchange_line(exch)
-        if exch_line:
-            lines.append(f"**💱 환율**: {exch_line}")
-            lines.append("")
+    # 출발 전 필수 요약 — 비자·안전·환율·시즌 (여행 질문 하나로 준비 전체가 보이도록)
+    lines.extend(_render_essentials_md(exch, visa, alert, season))
+
+    # 블로그 스니펫에서 큐레이션 스팟 언급을 집계 (동적 인기 신호)
+    mentions = _count_spot_mentions(posts, spots or [])
 
     # 도시 미지정 = "어디 가면 좋아?" 가 질문의 핵심 → 목적에 맞는 도시부터 제안
     if not city:
@@ -710,7 +1063,15 @@ def _render_itinerary_md(
     # 도시가 정해졌고 큐레이션 스팟이 있으면 → 일자별 코스 뼈대를 재료로 제공
     elif spots:
         city_ko = cities.get(city, {}).get("name_ko", city)
-        lines.extend(_render_day_plan_md(city_ko, spots, purpose, nights))
+        lines.extend(_render_day_plan_md(city_ko, spots, purpose, nights, mentions, country))
+
+    # 서로 다른 검색 결과에 반복 등장한 큐레이션 명소 — 검색 시점마다 바뀌는 보조 신호
+    hot = [name for name, c in sorted(mentions.items(), key=lambda x: -x[1]) if c >= 2]
+    if hot:
+        lines.append("## 🔥 이번 후기에 자주 등장한 명소")
+        lines.append("서로 다른 검색 결과에서 반복 언급된 곳입니다 (검색 시점에 따라 달라집니다).")
+        lines.append("- " + " · ".join(hot[:5]))
+        lines.append("")
 
     # 목적별 여행 방향 — 같은 목적이라도 세부 방향(데이트/휴식/취미 등)에 따라
     # 갈 곳이 달라지므로 방향을 함께 제시해 호스트 LLM 이 좁혀가게 함
@@ -737,10 +1098,19 @@ def _render_itinerary_md(
 
     lines.append("## 📝 실제 여행자 후기")
     lines.append("")
-    for i, p in enumerate(posts, 1):
-        desc = p["description"][:60] + "…" if len(p["description"]) > 60 else p["description"]
+    # 집계는 전체(위 mentions)를 쓰되, 화면 노출은 상위 5건으로 (result 최소 크기)
+    # LLM 은 링크를 열지 못하므로 정제된 스니펫이 유일한 본문 신호 — 넉넉히 노출
+    for i, p in enumerate(posts[:5], 1):
+        desc = p["description"]
+        desc = desc[:110] + "…" if len(desc) > 110 else desc
         lines.append(f"**{i}. [{p['title']}]({p['link']})**")
-        lines.append(f"- {desc}")
+        postdate = p.get("postdate", "")
+        if len(postdate) == 8 and postdate.isdigit():
+            postdate = f"{postdate[:4]}-{postdate[4:6]}-{postdate[6:]}"
+        meta = " · ".join(v for v in (p.get("bloggername", ""), postdate) if v)
+        if meta:
+            lines.append(f"- {meta}")
+        lines.append(f"- {desc}" if desc else "- (본문 미리보기 없음)")
         lines.append("")
 
     lines.append(f"> 검색 쿼리: `{query}`")

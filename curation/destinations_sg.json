@@ -1,0 +1,18 @@
+{
+  "country": "SG",
+  "schema_version": 1,
+  "last_reviewed": "2026-07-15",
+  "cities": {
+    "singapore": {
+      "name_ko": "싱가포르", "name_local": "Singapore",
+      "spots": [
+        {"name_ko": "마리나베이 샌즈", "name_local": "Marina Bay Sands", "category": "culture", "one_liner": "루프탑 인피니티풀 랜드마크", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "마리나베이샌즈 싱가포르"},
+        {"name_ko": "가든스 바이 더 베이", "name_local": "Gardens by the Bay", "category": "nature", "one_liner": "슈퍼트리·돔 정원", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "가든스바이더베이"},
+        {"name_ko": "센토사 섬", "name_local": "Sentosa", "category": "nature", "one_liner": "리조트·유니버설 스튜디오", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "센토사 싱가포르"},
+        {"name_ko": "머라이언 파크", "name_local": "Merlion Park", "category": "culture", "one_liner": "싱가포르 상징 분수상", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "머라이언 파크"},
+        {"name_ko": "차이나타운", "name_local": "Chinatown", "category": "food", "one_liner": "사원·호커센터 먹거리", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "차이나타운 싱가포르", "preferred_times": ["lunch", "evening"]},
+        {"name_ko": "부기스 스트리트", "name_local": "Bugis Street", "category": "shopping", "one_liner": "야시장·저가 쇼핑거리", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "부기스 스트리트"}
+      ]
+    }
+  }
+}
