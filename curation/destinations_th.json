@@ -18,7 +18,12 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "방콕 왕궁"
+          "search_query": "방콕 왕궁",
+          "aliases": [
+            "방콕 왕궁",
+            "그랜드팰리스",
+            "에메랄드 사원"
+          ]
         },
         {
           "name_ko": "왓 포",
@@ -31,7 +36,11 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "왓포 방콕"
+          "search_query": "왓포 방콕",
+          "aliases": [
+            "와불사",
+            "왓포"
+          ]
         },
         {
           "name_ko": "왓 아룬",
@@ -44,7 +53,11 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "왓아룬 방콕"
+          "search_query": "왓아룬 방콕",
+          "aliases": [
+            "새벽사원",
+            "왓아룬"
+          ]
         },
         {
           "name_ko": "짜뚜짝 주말시장",
@@ -57,7 +70,11 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "짜뚜짝 시장 방콕"
+          "search_query": "짜뚜짝 시장 방콕",
+          "aliases": [
+            "짜뚜짝",
+            "짜뚜짝시장"
+          ]
         },
         {
           "name_ko": "카오산 로드",
@@ -73,6 +90,9 @@
           "search_query": "카오산로드 방콕",
           "preferred_times": [
             "evening"
+          ],
+          "aliases": [
+            "카오산"
           ]
         },
         {
@@ -91,14 +111,93 @@
       ]
     },
     "chiangmai": {
-      "name_ko": "치앙마이", "name_local": "เชียงใหม่",
+      "name_ko": "치앙마이",
+      "name_local": "เชียงใหม่",
       "spots": [
-        {"name_ko": "도이수텝 (왓 프라탓)", "name_local": "วัดพระธาตุดอยสุเทพ", "category": "culture", "one_liner": "산 위 황금 사원", "best_season": ["winter"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "도이수텝 치앙마이"},
-        {"name_ko": "왓 체디루앙", "name_local": "วัดเจดีย์หลวง", "category": "culture", "one_liner": "올드시티 대형 고찰", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "왓 체디루앙 치앙마이"},
-        {"name_ko": "님만해민", "name_local": "นิมมานเหมินท์", "category": "shopping", "one_liner": "카페·부티크 거리", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "님만해민 치앙마이"},
-        {"name_ko": "코끼리 자연공원", "name_local": "Elephant Nature Park", "category": "nature", "one_liner": "코끼리 보호소 체험", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "코끼리 자연공원 치앙마이"},
-        {"name_ko": "선데이 워킹 스트리트", "name_local": "ถนนคนเดินวันอาทิตย์", "category": "shopping", "one_liner": "일요 야시장·수공예", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "선데이 워킹스트리트 치앙마이"},
-        {"name_ko": "창푸악 야시장", "name_local": "ตลาดช้างเผือก", "category": "food", "one_liner": "북문 먹거리 야시장", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "창푸악 야시장 치앙마이", "preferred_times": ["evening"]}
+        {
+          "name_ko": "도이수텝 (왓 프라탓)",
+          "name_local": "วัดพระธาตุดอยสุเทพ",
+          "category": "culture",
+          "one_liner": "산 위 황금 사원",
+          "best_season": [
+            "winter"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "도이수텝 치앙마이",
+          "aliases": [
+            "도이수텝"
+          ]
+        },
+        {
+          "name_ko": "왓 체디루앙",
+          "name_local": "วัดเจดีย์หลวง",
+          "category": "culture",
+          "one_liner": "올드시티 대형 고찰",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "왓 체디루앙 치앙마이"
+        },
+        {
+          "name_ko": "님만해민",
+          "name_local": "นิมมานเหมินท์",
+          "category": "shopping",
+          "one_liner": "카페·부티크 거리",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "님만해민 치앙마이"
+        },
+        {
+          "name_ko": "코끼리 자연공원",
+          "name_local": "Elephant Nature Park",
+          "category": "nature",
+          "one_liner": "코끼리 보호소 체험",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "코끼리 자연공원 치앙마이"
+        },
+        {
+          "name_ko": "선데이 워킹 스트리트",
+          "name_local": "ถนนคนเดินวันอาทิตย์",
+          "category": "shopping",
+          "one_liner": "일요 야시장·수공예",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "선데이 워킹스트리트 치앙마이"
+        },
+        {
+          "name_ko": "창푸악 야시장",
+          "name_local": "ตลาดช้างเผือก",
+          "category": "food",
+          "one_liner": "북문 먹거리 야시장",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "창푸악 야시장 치앙마이",
+          "preferred_times": [
+            "evening"
+          ]
+        }
       ]
     }
   }

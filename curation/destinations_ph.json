@@ -19,7 +19,11 @@
           "stability": "popular",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "막탄섬 세부"
+          "search_query": "막탄섬 세부",
+          "aliases": [
+            "막탄섬",
+            "호핑투어"
+          ]
         },
         {
           "name_ko": "마젤란 십자가",
@@ -45,7 +49,10 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "산토니뇨 성당 세부"
+          "search_query": "산토니뇨 성당 세부",
+          "aliases": [
+            "산토니뇨"
+          ]
         },
         {
           "name_ko": "카와산 폭포",
@@ -59,7 +66,10 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "카와산 폭포 세부"
+          "search_query": "카와산 폭포 세부",
+          "aliases": [
+            "카와산"
+          ]
         },
         {
           "name_ko": "톱스 전망대",
@@ -72,7 +82,11 @@
           "stability": "popular",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "톱스 전망대 세부"
+          "search_query": "톱스 전망대 세부",
+          "aliases": [
+            "톱스힐",
+            "tops"
+          ]
         },
         {
           "name_ko": "카르본 시장",
@@ -94,14 +108,97 @@
       ]
     },
     "boracay": {
-      "name_ko": "보라카이", "name_local": "Boracay",
+      "name_ko": "보라카이",
+      "name_local": "Boracay",
       "spots": [
-        {"name_ko": "화이트 비치", "name_local": "White Beach", "category": "nature", "one_liner": "4km 백사장 대표 해변", "best_season": ["winter", "spring"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "화이트비치 보라카이"},
-        {"name_ko": "푸카 비치", "name_local": "Puka Beach", "category": "nature", "one_liner": "조개껍질 자연 해변", "best_season": ["winter", "spring"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "푸카비치 보라카이"},
-        {"name_ko": "윌리스 록", "name_local": "Willy's Rock", "category": "culture", "one_liner": "성모상 화산 바위섬", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "윌리스 록 보라카이"},
-        {"name_ko": "불라복 비치", "name_local": "Bulabog Beach", "category": "nature", "one_liner": "카이트·윈드서핑 해변", "best_season": ["winter"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "불라복 비치 보라카이"},
-        {"name_ko": "호핑·파라세일링", "name_local": "Island Hopping", "category": "nature", "one_liner": "해양 액티비티 투어", "best_season": ["winter", "spring"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "보라카이 호핑투어"},
-        {"name_ko": "디몰", "name_local": "D'Mall", "category": "food", "one_liner": "중심 상점가·먹거리", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "디몰 보라카이", "preferred_times": ["lunch", "evening"]}
+        {
+          "name_ko": "화이트 비치",
+          "name_local": "White Beach",
+          "category": "nature",
+          "one_liner": "4km 백사장 대표 해변",
+          "best_season": [
+            "winter",
+            "spring"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "화이트비치 보라카이",
+          "aliases": [
+            "화이트비치"
+          ]
+        },
+        {
+          "name_ko": "푸카 비치",
+          "name_local": "Puka Beach",
+          "category": "nature",
+          "one_liner": "조개껍질 자연 해변",
+          "best_season": [
+            "winter",
+            "spring"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "푸카비치 보라카이"
+        },
+        {
+          "name_ko": "윌리스 록",
+          "name_local": "Willy's Rock",
+          "category": "culture",
+          "one_liner": "성모상 화산 바위섬",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "윌리스 록 보라카이"
+        },
+        {
+          "name_ko": "불라복 비치",
+          "name_local": "Bulabog Beach",
+          "category": "nature",
+          "one_liner": "카이트·윈드서핑 해변",
+          "best_season": [
+            "winter"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "불라복 비치 보라카이"
+        },
+        {
+          "name_ko": "호핑·파라세일링",
+          "name_local": "Island Hopping",
+          "category": "nature",
+          "one_liner": "해양 액티비티 투어",
+          "best_season": [
+            "winter",
+            "spring"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "보라카이 호핑투어"
+        },
+        {
+          "name_ko": "디몰",
+          "name_local": "D'Mall",
+          "category": "food",
+          "one_liner": "중심 상점가·먹거리",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "디몰 보라카이",
+          "preferred_times": [
+            "lunch",
+            "evening"
+          ]
+        }
       ]
     }
   }

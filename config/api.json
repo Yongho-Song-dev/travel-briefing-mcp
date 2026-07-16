@@ -23,7 +23,7 @@
   "naver_warm": {
     "main_country": "JP",
     "nights": [2, 3, 4],
-    "secondary_nights": [3],
+    "secondary_nights": [2, 3],
     "secondary_max_cities": 3,
     "budget_krw": 1000000
   }

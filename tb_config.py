@@ -153,6 +153,7 @@ def city_meta(country: str) -> dict:
 # --- 어휘·레이블 뷰 ---
 _DOMESTIC_KW: list[str]         = _VOCAB.get("domestic_keywords", [])
 _PURPOSE_PLAN: dict[str, dict]  = _VOCAB.get("purpose_plan", {})
+_CITY_FOOD: dict[str, str]      = _VOCAB.get("city_food", {})
 _PLAN_TIMING: dict              = _VOCAB.get("plan_timing", {})
 _PURPOSE_KO: dict[str, str]     = _VOCAB.get("purpose_ko", {})
 _PURPOSE_ANGLE: dict[str, dict] = _VOCAB.get("purpose_angle", {})

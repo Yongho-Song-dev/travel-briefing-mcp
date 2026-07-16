@@ -19,7 +19,10 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "미케비치 다낭"
+          "search_query": "미케비치 다낭",
+          "aliases": [
+            "미케비치"
+          ]
         },
         {
           "name_ko": "바나힐",
@@ -32,7 +35,11 @@
           "stability": "popular",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "바나힐 다낭"
+          "search_query": "바나힐 다낭",
+          "aliases": [
+            "골든브릿지",
+            "바나산"
+          ]
         },
         {
           "name_ko": "오행산",
@@ -45,7 +52,10 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "오행산 다낭"
+          "search_query": "오행산 다낭",
+          "aliases": [
+            "마블마운틴"
+          ]
         },
         {
           "name_ko": "다낭 대성당",
@@ -58,7 +68,10 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "다낭 대성당"
+          "search_query": "다낭 대성당",
+          "aliases": [
+            "핑크성당"
+          ]
         },
         {
           "name_ko": "한 시장",
@@ -88,19 +101,106 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "용다리 다낭"
+          "search_query": "용다리 다낭",
+          "aliases": [
+            "용다리"
+          ]
         }
       ]
     },
     "nhatrang": {
-      "name_ko": "나트랑", "name_local": "Nha Trang",
+      "name_ko": "나트랑",
+      "name_local": "Nha Trang",
       "spots": [
-        {"name_ko": "나트랑 비치", "name_local": "Bãi biển Nha Trang", "category": "nature", "one_liner": "6km 시내 해변", "best_season": ["summer", "autumn"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "나트랑 비치"},
-        {"name_ko": "빈원더스", "name_local": "VinWonders", "category": "nature", "one_liner": "케이블카로 가는 섬 테마파크", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "빈원더스 나트랑"},
-        {"name_ko": "포나가르 탑", "name_local": "Tháp Bà Ponagar", "category": "culture", "one_liner": "참파 왕국 힌두 사원", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "포나가르 탑 나트랑"},
-        {"name_ko": "나트랑 대성당", "name_local": "Nhà thờ Núi", "category": "culture", "one_liner": "고딕 석조 성당", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "나트랑 대성당"},
-        {"name_ko": "탑바 머드 스파", "name_local": "Tắm bùn Tháp Bà", "category": "nature", "one_liner": "머드·온천 스파", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "탑바 머드 스파 나트랑"},
-        {"name_ko": "담 시장", "name_local": "Chợ Đầm", "category": "food", "one_liner": "나트랑 최대 재래시장", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "담 시장 나트랑", "preferred_times": ["morning", "lunch"]}
+        {
+          "name_ko": "나트랑 비치",
+          "name_local": "Bãi biển Nha Trang",
+          "category": "nature",
+          "one_liner": "6km 시내 해변",
+          "best_season": [
+            "summer",
+            "autumn"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "나트랑 비치",
+          "aliases": [
+            "나트랑비치"
+          ]
+        },
+        {
+          "name_ko": "빈원더스",
+          "name_local": "VinWonders",
+          "category": "nature",
+          "one_liner": "케이블카로 가는 섬 테마파크",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "빈원더스 나트랑",
+          "aliases": [
+            "빈펄"
+          ]
+        },
+        {
+          "name_ko": "포나가르 탑",
+          "name_local": "Tháp Bà Ponagar",
+          "category": "culture",
+          "one_liner": "참파 왕국 힌두 사원",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "포나가르 탑 나트랑"
+        },
+        {
+          "name_ko": "나트랑 대성당",
+          "name_local": "Nhà thờ Núi",
+          "category": "culture",
+          "one_liner": "고딕 석조 성당",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "나트랑 대성당"
+        },
+        {
+          "name_ko": "탑바 머드 스파",
+          "name_local": "Tắm bùn Tháp Bà",
+          "category": "nature",
+          "one_liner": "머드·온천 스파",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "탑바 머드 스파 나트랑"
+        },
+        {
+          "name_ko": "담 시장",
+          "name_local": "Chợ Đầm",
+          "category": "food",
+          "one_liner": "나트랑 최대 재래시장",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "담 시장 나트랑",
+          "preferred_times": [
+            "morning",
+            "lunch"
+          ]
+        }
       ]
     }
   }

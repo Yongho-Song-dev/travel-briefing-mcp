@@ -145,17 +145,20 @@ def _warm_naver_blog_once() -> None:
 
     # 동적 관광 정보 워밍 — 각 국가 대표 도시의 '가볼만한곳' 을 매일 선제 수집.
     # 정적 큐레이션이 못 담는 최신 관광 트렌드를 블로그 후기로 보충 (검색 시점마다 갱신).
-    queries |= _sightseeing_queries()
+    sight = _sightseeing_queries()
 
-    # 네이버 검색 API 는 초당 호출 제한이 있어 간격을 둔다 (429 방지).
-    # 관광 쿼리 추가로 쿼리 수가 늘어 0.05→0.2s (초당 ~5회). 백그라운드라 사용자 영향 없음.
+    # 관광 쿼리(동적 요약 재료)를 먼저 워밍한다 — 서버 기동 직후에도 동적 요약이 빨리 준비되도록.
+    # (관광 25개는 ~5초면 적재되고, 목적·시즌 쿼리 280개는 그 뒤에 이어서 채운다)
+    ordered = sorted(sight) + [q for q in sorted(queries) if q not in sight]
+
+    # 네이버 검색 API 는 초당 호출 제한이 있어 간격을 둔다 (429 방지, 초당 ~5회).
     delay = _API_CFG.get("naver_warm", {}).get("delay_seconds", 0.2)
     warmed = 0
-    for q in sorted(queries):
+    for q in ordered:
         if _fetch_naver_blog(q, display=_NAVER_BLOG_DISPLAY):
             warmed += 1
         time.sleep(delay)
-    logger.info("네이버 블로그 워밍 완료 (%d/%d 쿼리 적재)", warmed, len(queries))
+    logger.info("네이버 블로그 워밍 완료 (%d/%d 쿼리 적재)", warmed, len(ordered))
 
 
 # 워밍 잡 레지스트리 (스케줄은 _WARM_SCHEDULE — config/api.json 의 warm_schedule)

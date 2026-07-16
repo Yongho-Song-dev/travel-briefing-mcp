@@ -12,7 +12,7 @@ import re
 
 from tb_config import (
     _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW, _DOMESTIC_KW,
-    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PLAN_TIMING, _QUERY_VOCAB,
+    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PLAN_TIMING, _CITY_FOOD, _QUERY_VOCAB,
     city_meta, today_kst,
 )
 
@@ -814,6 +814,7 @@ def _next_shopping(sights: list[dict], start: int, area: Optional[str] = None) -
 def _render_day_plan_md(
     city_ko: str, spots: list[dict], purpose: Optional[str], nights: int,
     mentions: Optional[dict[str, int]] = None, country: str = "JP",
+    city_key: Optional[str] = None,
 ) -> list[str]:
     """
     - 큐레이션 스팟을 '오전·점심·오후·저녁' 시간대에 배치한 일자별 코스를 만드는 함수
@@ -856,6 +857,12 @@ def _render_day_plan_md(
     # 자동 당일치기는 3박 이상일 때 최대 1회만, 첫날·귀국일이 아닌 Day 2에 배치한다.
     day_trip_day = 1 if days >= 4 and day_trips else None
     day_trip = day_trips[0] if day_trip_day is not None else None
+
+    # 빈 식사 슬롯용 도시 대표 먹거리 힌트 — 카카오 LLM 은 뼈대를 그대로 전달하므로,
+    # "근처 로컬 식당" 대신 지역 먹거리를 미리 채워 완성도를 높인다 (개별 가게 아닌 지역 단위).
+    food_hint = _CITY_FOOD.get(city_key or "", "")
+    meal_placeholder = (f"현지 로컬 맛집 (이 지역 대표: {food_hint})"
+                        if food_hint else "근처 로컬 식당 (동선상 편한 곳으로)")
 
     purpose_ko = _PURPOSE_KO.get(purpose, "") if purpose else ""
     head = f"## 🗓 {nights}박{days}일 코스 제안 ({city_ko}"
@@ -906,8 +913,8 @@ def _render_day_plan_md(
                     spot = sights.pop(nxt)
                     suffix = " 일대에서 식사"  # 상점가 (식당 밀집)
             if is_meal and spot is None:
-                # 개별 식당은 큐레이션 대상이 아니다 — 호스트 LLM 이 채우도록 열어 둔다
-                lines.append(f"- {slot} · 근처 로컬 식당 (동선상 편한 곳으로)")
+                # 개별 식당은 큐레이션 안 함 — 지역 대표 먹거리 힌트로 채워 완성도를 높인다
+                lines.append(f"- {slot} · {meal_placeholder}")
                 continue
             if not is_meal and sights:
                 spot = _pop_sight_for_area(
@@ -1094,14 +1101,18 @@ def _render_itinerary_md(
     # 도시가 정해졌고 큐레이션 스팟이 있으면 → 일자별 코스 뼈대를 재료로 제공
     elif spots:
         city_ko = cities.get(city, {}).get("name_ko", city)
-        lines.extend(_render_day_plan_md(city_ko, spots, purpose, nights, mentions, country))
+        lines.extend(_render_day_plan_md(city_ko, spots, purpose, nights, mentions, country, city))
 
-    # 서로 다른 검색 결과에 반복 등장한 큐레이션 명소 — 검색 시점마다 바뀌는 보조 신호
-    hot = [name for name, c in sorted(mentions.items(), key=lambda x: -x[1]) if c >= 2]
+    # 서로 다른 후기에 반복 등장한 큐레이션 명소 = 블로그에서 추출한 동적 인기 신호.
+    # LLM 이 파편 스니펫을 종합하는 대신, 서버가 집계한 '몇 건의 후기가 언급했나'를 준다.
+    hot = [(name, c) for name, c in sorted(mentions.items(), key=lambda x: -x[1]) if c >= 2]
     if hot:
-        lines.append("## 🔥 이번 후기에 자주 등장한 명소")
-        lines.append("서로 다른 검색 결과에서 반복 언급된 곳입니다 (검색 시점에 따라 달라집니다).")
-        lines.append("- " + " · ".join(hot[:5]))
+        lines.append("## 🔥 최근 후기가 꼽은 인기 명소 (동적)")
+        lines.append("최근 검색된 실제 여행 후기들이 공통으로 언급한 곳입니다 (검색 시점마다 갱신).")
+        for name, c in hot[:6]:
+            lines.append(f"- **{name}** — 후기 {c}건 언급")
+        lines.append("> 위 명소는 요즘 실제로 많이 가는 곳입니다. 일정에 우선 반영하고, "
+                     "아래 후기 내용을 근거로 자세히 설명해 주세요.")
         lines.append("")
 
     # 목적별 여행 방향 — 같은 목적이라도 세부 방향(데이트/휴식/취미 등)에 따라

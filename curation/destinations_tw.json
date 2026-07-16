@@ -18,7 +18,11 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "타이베이 101"
+          "search_query": "타이베이 101",
+          "aliases": [
+            "101타워",
+            "타이베이101"
+          ]
         },
         {
           "name_ko": "국립고궁박물원",
@@ -31,7 +35,10 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "국립고궁박물원 타이베이"
+          "search_query": "국립고궁박물원 타이베이",
+          "aliases": [
+            "고궁박물원"
+          ]
         },
         {
           "name_ko": "지우펀",
@@ -60,6 +67,10 @@
           "search_query": "스린야시장 타이베이",
           "preferred_times": [
             "evening"
+          ],
+          "aliases": [
+            "스린야시장",
+            "스린 나이트마켓"
           ]
         },
         {
@@ -73,7 +84,10 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "룽산사 타이베이"
+          "search_query": "룽산사 타이베이",
+          "aliases": [
+            "용산사"
+          ]
         },
         {
           "name_ko": "시먼딩",
@@ -91,14 +105,93 @@
       ]
     },
     "kaohsiung": {
-      "name_ko": "가오슝", "name_local": "高雄",
+      "name_ko": "가오슝",
+      "name_local": "高雄",
       "spots": [
-        {"name_ko": "롄츠탄 (연지담)", "name_local": "蓮池潭", "category": "culture", "one_liner": "용호탑·춘추각 호수", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "롄츠탄 가오슝"},
-        {"name_ko": "포광산 불타기념관", "name_local": "佛光山佛陀紀念館", "category": "culture", "one_liner": "대형 불교 성지", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "포광산 불타기념관"},
-        {"name_ko": "시쯔완", "name_local": "西子灣", "category": "nature", "one_liner": "항구 노을·해변", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "시쯔완 가오슝"},
-        {"name_ko": "보얼 예술특구", "name_local": "駁二藝術特區", "category": "culture", "one_liner": "항만 창고 예술구", "best_season": ["all"], "stability": "popular", "status": "active", "verified_date": "2026-07-15", "search_query": "보얼 예술특구 가오슝"},
-        {"name_ko": "치진섬", "name_local": "旗津", "category": "nature", "one_liner": "페리로 가는 섬·해산물", "best_season": ["summer"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "치진섬 가오슝"},
-        {"name_ko": "리우허 야시장", "name_local": "六合夜市", "category": "food", "one_liner": "가오슝 대표 야시장", "best_season": ["all"], "stability": "landmark", "status": "active", "verified_date": "2026-07-15", "search_query": "리우허 야시장 가오슝", "preferred_times": ["evening"]}
+        {
+          "name_ko": "롄츠탄 (연지담)",
+          "name_local": "蓮池潭",
+          "category": "culture",
+          "one_liner": "용호탑·춘추각 호수",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "롄츠탄 가오슝"
+        },
+        {
+          "name_ko": "포광산 불타기념관",
+          "name_local": "佛光山佛陀紀念館",
+          "category": "culture",
+          "one_liner": "대형 불교 성지",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "포광산 불타기념관"
+        },
+        {
+          "name_ko": "시쯔완",
+          "name_local": "西子灣",
+          "category": "nature",
+          "one_liner": "항구 노을·해변",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "시쯔완 가오슝"
+        },
+        {
+          "name_ko": "보얼 예술특구",
+          "name_local": "駁二藝術特區",
+          "category": "culture",
+          "one_liner": "항만 창고 예술구",
+          "best_season": [
+            "all"
+          ],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "보얼 예술특구 가오슝"
+        },
+        {
+          "name_ko": "치진섬",
+          "name_local": "旗津",
+          "category": "nature",
+          "one_liner": "페리로 가는 섬·해산물",
+          "best_season": [
+            "summer"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "치진섬 가오슝"
+        },
+        {
+          "name_ko": "리우허 야시장",
+          "name_local": "六合夜市",
+          "category": "food",
+          "one_liner": "가오슝 대표 야시장",
+          "best_season": [
+            "all"
+          ],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-15",
+          "search_query": "리우허 야시장 가오슝",
+          "preferred_times": [
+            "evening"
+          ],
+          "aliases": [
+            "리우허야시장"
+          ]
+        }
       ]
     }
   }

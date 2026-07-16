@@ -5,6 +5,19 @@
     "friends": "친구여행",
     "solo":    "혼자여행"
   },
+  "city_food": {
+    "tokyo": "스시·라멘·몬자야키", "osaka": "타코야키·오코노미야키·쿠시카츠",
+    "kyoto": "유도후·니신소바·말차디저트", "fukuoka": "하카타라멘·모츠나베·야타이",
+    "sapporo": "미소라멘·징기스칸·해산물", "okinawa": "오키나와소바·타코라이스·아구돼지",
+    "hiroshima": "히로시마 오코노미야키·굴", "nara": "카키노하즈시·차메시",
+    "danang": "미꽝·반쎄오·분짜", "nhatrang": "분짜까·넴느엉·해산물",
+    "bangkok": "팟타이·똠얌꿍·망고밥", "chiangmai": "카오소이·북부 카레",
+    "taipei": "우육면·샤오롱바오·버블티", "kaohsiung": "단자이면·해산물",
+    "cebu": "레촌·씨푸드", "boracay": "씨푸드·망고셰이크",
+    "beijing": "베이징덕·자장면·훠궈", "shanghai": "샤오롱바오·게살요리",
+    "singapore": "칠리크랩·하이난치킨라이스·락사",
+    "kualalumpur": "나시르막·사테·바쿠테", "bali": "나시고렝·바비굴링·사테"
+  },
   "purpose_plan": {
     "couple": {
       "categories": ["culture", "nature", "shopping", "onsen"],
