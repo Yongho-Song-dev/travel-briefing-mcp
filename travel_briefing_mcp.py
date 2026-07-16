@@ -222,12 +222,13 @@ def get_destinations(
     category: Optional[Literal["culture", "food", "nature", "shopping", "onsen"]] = None,
 ) -> str:
     """
-    Use this when the user asks which cities or places to visit in a supported country
-    (JP, CN, TW, VN, TH, PH, SG, MY, ID) — for example "교토 어디 가면 좋아?" or
-    "대만 어느 도시가 좋아?". Retrieves travel destinations from Travel Briefing(트래블 브리핑).
-    Japan returns curated spot-level lists (culture/food/nature/shopping/onsen) with
-    Kakao Map links; other countries return a city-level guide with seasonal highlights
-    and recommended traveler types. Only country is required.
+    Use this ONLY for a plain list of attractions/cities with no schedule — for example
+    "대만 어느 도시가 좋아?" or "교토 관광지 목록". Retrieves travel destinations from
+    Travel Briefing(트래블 브리핑): curated spot lists (culture/food/nature/shopping/onsen)
+    for a city, or a city-level guide when no city is given.
+    For a trip PLAN or ITINERARY (dates, nights, "여행 추천", "일정", "코스", "2박3일"),
+    use recommend_itinerary instead — do NOT ask the user to re-enter the city here.
+    Only country is required.
 
     - 도시·카테고리별 여행지를 반환하는 함수
       일본: 스팟 단위 큐레이션 (외부 JSON, 24h 갱신 → 폐업·리뉴얼 반영)
@@ -387,14 +388,16 @@ def recommend_itinerary(
     """
     Use this whenever the user asks where to go, what to do, or for a trip plan or
     itinerary for a supported country (JP, CN, TW, VN, TH, PH, SG, MY, ID) — for example
-    "9월에 친구들이랑 오사카 4박5일 어디 가면 좋을까?". Recommends a personalized itinerary
-    from Travel Briefing(트래블 브리핑) by combining the current exchange rate,
-    country-specific travel traits, purpose-based planning angles, and real traveler blog
-    reviews. Japan city requests also include a day-by-day route of curated spots with
-    Kakao Map links; other countries currently provide city-level guidance and reviews.
-    Only country is required. Never ask the user for exact dates first: pass whatever the
-    user gave (month such as 9, nights such as 4, or exact YYYY-MM-DD dates) and the tool
-    fills in the rest. purpose is one of family, couple, friends, solo.
+    "다음 달 다낭 2박3일 커플". Recommends a personalized itinerary from
+    Travel Briefing(트래블 브리핑) by combining the current exchange rate, country-specific
+    travel traits, purpose-based planning angles, a day-by-day route of curated spots
+    (with map links), and real traveler blog reviews.
+    IMPORTANT: if the user mentions a city (다낭, 방콕, 오사카, 타이베이, 발리 …), ALWAYS
+    pass it as `city` — that is what produces the day-by-day course and city-specific
+    reviews. Only country is required, but omitting a city the user named gives a worse result.
+    Never ask for exact dates first: pass whatever the user gave (month such as 9, nights
+    such as 4, or exact YYYY-MM-DD) and the tool fills in the rest. purpose is one of
+    family, couple, friends, solo.
     """
     if city:
         resolved_city = resolve_city_key(country, city)
@@ -435,14 +438,14 @@ def recommend_itinerary(
         place = city_ko if city_ko == _STATIC[country]["name_ko"] else f"{_STATIC[country]['name_ko']} {city_ko}"
         f_sight = _fetch_pool.submit(_fetch_naver_blog, f"{place} 가볼만한곳", _NAVER_BLOG_DISPLAY)
     try:
-        posts = _filter_by_country(f_posts.result(), country)
+        posts = _filter_by_country(f_posts.result(), country, city)
     except Exception:
         posts = []
     # 관광 후기를 뒤에 합산 (중복 링크 제거) — 표시는 상위 5건이라 목적 후기 우선, 집계는 강화
     if f_sight is not None:
         try:
             seen = {p["link"] for p in posts}
-            posts += [p for p in _filter_by_country(f_sight.result(), country)
+            posts += [p for p in _filter_by_country(f_sight.result(), country, city)
                       if p.get("link") and p["link"] not in seen]
         except Exception:
             pass

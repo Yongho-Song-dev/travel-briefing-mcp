@@ -115,31 +115,59 @@ def _kw_score(title: str, body: str, keywords: list[str]) -> int:
     return sum(3 * title.count(kw.lower()) + body.count(kw.lower()) for kw in keywords)
 
 
-def _filter_by_country(posts: list[dict], country: str) -> list[dict]:
+def _city_match_keys(country: str, city: Optional[str]) -> list[str]:
     """
-    - 블로그 검색 결과에서 해당 국가와 무관한(국내 여행 등) 글을 제거하는 함수
-      단순 포함 검사는 오탐이 난다 — 부산 여행기에 "부산역 근처 일본 가옥" 한 줄만 있어도
-      '일본' 이 잡혀 통과했다. 그래서 국가 신호와 국내 신호를 점수로 비교해,
-      국가 신호가 더 강한 글만 남긴다.
+    - 도시명 매칭용 키워드 목록 (한국어명·현지어·별칭·키)을 소문자로 반환하는 함수
+    ### Args:
+      - country(str): 국가 코드
+      - city(Optional[str]): 도시 키
+    ### Returns:
+      - keys(list[str]): 소문자 매칭 키. city 없으면 빈 리스트
+    """
+    if not city:
+        return []
+    meta = city_meta(country).get(city, {})
+    keys = {city, meta.get("name_ko", ""), meta.get("name_local", ""), *meta.get("aliases", [])}
+    return [k.lower() for k in keys if k]
+
+
+def _filter_by_country(posts: list[dict], country: str, city: Optional[str] = None) -> list[dict]:
+    """
+    - 블로그 검색 결과에서 대상 국가·도시와 무관한 글을 제거하는 함수
+      3단계 판정 (제목은 본문보다 3배 가중):
+        1) 대상국 신호가 있어야 하고 국내(한국) 신호보다 강해야 함
+        2) 다른 해외 국가 신호가 더 강하면 제외 — 베트남 검색에 '상하이' 글이 섞이는 문제
+        3) 도시가 지정되면 그 도시명이 제목·본문에 있어야 함 — '다낭' 검색에 '나트랑' 글 제외
     ### Args:
       - posts(list[dict]): _fetch_naver_blog 결과
       - country(str): 국가 코드
+      - city(Optional[str]): 도시 키. 지정 시 도시명 필수 매칭
     ### Returns:
-      - result(list[dict]): 해당 국가 글만 남긴 목록
+      - result(list[dict]): 대상 국가·도시 글만 남긴 목록
     """
     keywords = _COUNTRY_FILTER_KW.get(country, [])
     if not keywords:
         return posts
 
+    other_kw = [kw for c, kw in _COUNTRY_FILTER_KW.items() if c != country]
+    city_keys = _city_match_keys(country, city)
+
     result = []
     for p in posts:
         title = p.get("title", "").lower()
         body  = p.get("description", "").lower()
-        abroad   = _kw_score(title, body, keywords)
+        target   = _kw_score(title, body, keywords)
         domestic = _kw_score(title, body, _DOMESTIC_KW)
-        # 해외 신호가 없거나, 국내 신호가 더 강하면 제외 (동점이면 해외로 인정)
-        if abroad and abroad >= domestic:
-            result.append(p)
+        if not target or target < domestic:
+            continue
+        # 다른 해외 국가 신호가 더 강하면 그 나라 글로 보고 제외
+        other_max = max((_kw_score(title, body, kw) for kw in other_kw), default=0)
+        if other_max > target:
+            continue
+        # 도시 지정 시 도시명이 제목·본문에 있어야 통과 (같은 국가 다른 도시 제거)
+        if city_keys and not any(k in title or k in body for k in city_keys):
+            continue
+        result.append(p)
     return result
 
 
@@ -601,8 +629,11 @@ def _render_city_picks_md(
             line += f" / {season_ko} 하이라이트: **{hl}**"
         lines.append(line)
     lines.append("")
-    lines.append(f"> 도시를 정하면 그 도시 기준으로 다시 추천해 드려요. "
-                 f"(예: \"{picked[0][1]['name_ko']}로 갈래\")")
+    # 재입력 유도가 아니라 '이미 말한 도시로 상세 일정'을 바로 만들도록 호스트 LLM 에 지시.
+    # (사용자가 도시를 말했는데 city 없이 호출된 경우 — 같은 도시를 다시 묻지 않게)
+    first_city = picked[0][1]["name_ko"]
+    lines.append(f"> 위 도시 중 하나로 상세 일정을 원하시면 이 도구를 `city` 를 채워 다시 호출하세요 "
+                 f"(예: {first_city}). 사용자에게 도시를 다시 되묻지 말고, 이미 언급했다면 그 도시로 진행하세요.")
     lines.append("")
     return lines
 
