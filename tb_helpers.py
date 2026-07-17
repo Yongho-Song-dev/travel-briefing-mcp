@@ -12,7 +12,7 @@ import re
 
 from tb_config import (
     _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW, _DOMESTIC_KW,
-    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PLAN_TIMING, _CITY_FOOD, _QUERY_VOCAB,
+    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PURPOSE_REASON, _PLAN_TIMING, _CITY_FOOD, _QUERY_VOCAB,
     city_meta, today_kst,
 )
 
@@ -860,14 +860,34 @@ def _render_day_plan_md(
 
     # 빈 식사 슬롯용 도시 대표 먹거리 힌트 — 카카오 LLM 은 뼈대를 그대로 전달하므로,
     # "근처 로컬 식당" 대신 지역 먹거리를 미리 채워 완성도를 높인다 (개별 가게 아닌 지역 단위).
+    # 카카오 LLM 이 괄호 안 내용을 압축 시 삭제하는 경향이 있어 '—' 데이터 라인 형태로 쓴다.
     food_hint = _CITY_FOOD.get(city_key or "", "")
-    meal_placeholder = (f"현지 로컬 맛집 (이 지역 대표: {food_hint})"
-                        if food_hint else "근처 로컬 식당 (동선상 편한 곳으로)")
+    meal_placeholder = (f"현지 로컬 맛집 — {city_ko} 대표 먹거리: {food_hint}"
+                        if food_hint else "근처 로컬 식당 — 동선상 편한 곳으로")
+
+    # 목적×카테고리별 '왜 이 스팟인가' — 지시문은 압축 시 잘리므로 각 라인에 데이터로 심는다
+    reasons = _PURPOSE_REASON.get(purpose or "", {})
+    mentions = mentions or {}
+
+    def _why(spot: dict) -> str:
+        parts = []
+        r = reasons.get(spot.get("category", ""))
+        if r:
+            parts.append(r)
+        n = mentions.get(spot["name_ko"], 0)
+        if n >= 2:
+            parts.append(f"최근 후기 {n}건 언급")
+        return (" · " + " · ".join(parts)) if parts else ""
 
     purpose_ko = _PURPOSE_KO.get(purpose, "") if purpose else ""
     head = f"## 🗓 {nights}박{days}일 코스 제안 ({city_ko}"
     head += f" · {purpose_ko})" if purpose_ko else ")"
     lines = [head]
+    # 코스 설계 이유를 첫 줄에 데이터로 명시 (왜 이렇게 짰는지)
+    note = plan.get("note", "")
+    design = f"{purpose_ko} 기준 — {note}" if purpose_ko and note else (note or "")
+    if design:
+        lines.append(f"**코스 설계**: {design}. 도착일·귀국일은 비행을 감안해 가볍게 배치했어요.")
 
     for day in range(days):
         first, last = day == 0, day == days - 1
@@ -876,11 +896,11 @@ def _render_day_plan_md(
 
         if day == day_trip_day and day_trip:
             dwell = _dwell_hint(day_trip)
-            dwell_str = f" ({dwell} 소요)" if dwell else ""
+            dwell_str = f" · {dwell} 소요" if dwell else ""
             link = _map_link(country, day_trip["search_query"])
             lines.append(
                 f"- 🌄 하루 종일 · [{day_trip['name_ko']}]({link}) — "
-                f"{day_trip['one_liner']}{dwell_str}"
+                f"{day_trip['one_liner']}{_why(day_trip)}{dwell_str}"
             )
             lines.append("- 🍽 점심 · 당일치기 지역에서 동선에 맞춰 식사")
             lines.append("")
@@ -929,15 +949,12 @@ def _render_day_plan_md(
             if transit:
                 lines.append(f"  ↳ {transit}")
             dwell = _dwell_hint(spot)
-            dwell_str = f" ({dwell} 소요)" if dwell else ""
+            dwell_str = f" · {dwell} 소요" if dwell else ""
             link = _map_link(country, spot["search_query"])
-            lines.append(f"- {slot} · [{spot['name_ko']}]({link}) — {spot['one_liner']}{suffix}{dwell_str}")
+            lines.append(f"- {slot} · [{spot['name_ko']}]({link}) — {spot['one_liner']}{suffix}{_why(spot)}{dwell_str}")
             prev_spot = spot
         lines.append("")
 
-    note = plan.get("note")
-    if note:
-        lines.append(f"> 💡 {note}")
     lines.append("> 체류·이동 시간은 대략치입니다. 위 뼈대에 식사 메뉴를 더해 안내해 주세요. "
                  "숙소 위치에 따라 순서는 조정 가능합니다.")
     lines.append("")
