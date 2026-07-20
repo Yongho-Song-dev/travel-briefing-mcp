@@ -154,6 +154,11 @@ def city_meta(country: str) -> dict:
 _DOMESTIC_KW: list[str]         = _VOCAB.get("domestic_keywords", [])
 _PURPOSE_PLAN: dict[str, dict]  = _VOCAB.get("purpose_plan", {})
 _CITY_FOOD: dict[str, str]      = _VOCAB.get("city_food", {})
+# 1인 1일 표준 경비(현지 통화) — '_' 로 시작하는 메타 키(_comment/_reviewed)는 도시가 아니므로 제외
+_CITY_DAILY_COST: dict[str, dict] = {
+    k: v for k, v in _VOCAB.get("city_daily_cost", {}).items()
+    if not k.startswith("_") and isinstance(v, dict)
+}
 _PURPOSE_REASON: dict[str, dict] = _VOCAB.get("purpose_reason", {})
 _PLAN_TIMING: dict              = _VOCAB.get("plan_timing", {})
 _PURPOSE_KO: dict[str, str]     = _VOCAB.get("purpose_ko", {})

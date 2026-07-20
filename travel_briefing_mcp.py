@@ -28,12 +28,13 @@ Travel Briefing(트래블 브리핑) MCP 서버 - v9 (PlayMCP 가이드 2026.06.
 """
 
 from __future__ import annotations
-from typing import Any, Callable, Literal, Optional
+from typing import Annotated, Any, Callable, Literal, Optional
 from datetime import date, datetime
 import inspect
 import os
 
 from mcp.server.fastmcp import FastMCP
+from pydantic import Field
 
 from tb_config import (
     SupportedCountry, CURATED_COUNTRIES, _STATIC, _PURPOSE_KO, _NAVER_BLOG_DISPLAY,
@@ -67,6 +68,13 @@ mcp = FastMCP(
 )
 
 _READONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True}
+
+# "2박3일" 은 숫자가 둘이라 설명이 없으면 호스트 LLM 이 뒤 숫자(일)를 집어 nights=3 을 넘긴다.
+# 실제로 카카오 LLM 이 2박3일 요청에 nights=3 을 보내 Day 4 까지 생성된 사고가 있었다.
+_NIGHTS_FIELD = Field(
+    default=None,
+    description='Number of NIGHTS (박), not days. "2박3일" → 2, "3박4일" → 3, "4박5일" → 4.',
+)
 
 # docstring 에서 국문 내부 문서가 시작되는 지점 (CLAUDE.md 주석 컨벤션 기준)
 #   영문 description(가이드·PlayMCP 노출용) → 국문 '- 함수 설명' / '### Args' / '### Returns'
@@ -187,7 +195,7 @@ def get_flight_season_guide(
     depart_date: Optional[str] = None,
     return_date: Optional[str] = None,
     month: Optional[int] = None,
-    nights: Optional[int] = None,
+    nights: Annotated[Optional[int], _NIGHTS_FIELD] = None,
 ) -> str:
     """
     Use this when the user asks when to go, whether a period is peak or off-season, or
@@ -277,7 +285,7 @@ def compose_checklist(
     depart_date: Optional[str] = None,
     return_date: Optional[str] = None,
     month: Optional[int] = None,
-    nights: Optional[int] = None,
+    nights: Annotated[Optional[int], _NIGHTS_FIELD] = None,
 ) -> str:
     """
     Use this when the user asks what to prepare or pack before a trip — for example
@@ -389,7 +397,7 @@ def recommend_itinerary(
     depart_date: Optional[str] = None,
     return_date: Optional[str] = None,
     month: Optional[int] = None,
-    nights: Optional[int] = None,
+    nights: Annotated[Optional[int], _NIGHTS_FIELD] = None,
     budget_krw: Optional[int] = None,
     purpose: Optional[Literal["family", "couple", "friends", "solo"]] = None,
     num_people: Optional[int] = None,

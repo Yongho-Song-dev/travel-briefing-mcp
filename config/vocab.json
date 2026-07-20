@@ -48,6 +48,31 @@
     "singapore": "칠리크랩·하이난치킨라이스·락사",
     "kualalumpur": "나시르막·사테·바쿠테", "bali": "나시고렝·바비굴링·사테"
   },
+  "city_daily_cost": {
+    "_comment": "1인 1일 표준 여행 경비(현지 통화, 중급 기준). 항공·숙박 제외 — 변동이 커서 서버가 확정값을 주면 안 되는 항목이다. transport=시내 교통, food=3끼, admission=입장료·잡비. 연 1회 재검토.",
+    "_reviewed": "2026-07-20",
+    "tokyo":       {"transport": 1200, "food": 6000,  "admission": 1500},
+    "osaka":       {"transport": 1000, "food": 5500,  "admission": 1200},
+    "kyoto":       {"transport": 1000, "food": 5000,  "admission": 2000},
+    "fukuoka":     {"transport": 900,  "food": 5000,  "admission": 1000},
+    "sapporo":     {"transport": 1000, "food": 5500,  "admission": 1000},
+    "okinawa":     {"transport": 1500, "food": 5000,  "admission": 1500},
+    "hiroshima":   {"transport": 900,  "food": 4500,  "admission": 1000},
+    "nara":        {"transport": 800,  "food": 4000,  "admission": 1000},
+    "danang":      {"transport": 150000, "food": 400000, "admission": 100000},
+    "nhatrang":    {"transport": 150000, "food": 380000, "admission": 100000},
+    "bangkok":     {"transport": 150, "food": 600, "admission": 250},
+    "chiangmai":   {"transport": 120, "food": 450, "admission": 200},
+    "taipei":      {"transport": 150, "food": 600, "admission": 250},
+    "kaohsiung":   {"transport": 120, "food": 500, "admission": 200},
+    "cebu":        {"transport": 350, "food": 900,  "admission": 400},
+    "boracay":     {"transport": 300, "food": 1100, "admission": 500},
+    "beijing":     {"transport": 40, "food": 150, "admission": 80},
+    "shanghai":    {"transport": 40, "food": 180, "admission": 80},
+    "singapore":   {"transport": 8,  "food": 40,  "admission": 20},
+    "kualalumpur": {"transport": 20, "food": 60,  "admission": 30},
+    "bali":        {"transport": 150000, "food": 350000, "admission": 150000}
+  },
   "purpose_plan": {
     "couple": {
       "categories": ["culture", "nature", "shopping", "onsen"],

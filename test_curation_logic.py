@@ -13,12 +13,17 @@ from unittest.mock import Mock, patch
 
 import tb_api
 from tb_api import _fetch_naver_blog
-from tb_config import CURATED_COUNTRIES, _NAVER_BLOG_DISPLAY, city_meta
+from tb_config import (
+    CURATED_COUNTRIES, _CITY_DAILY_COST, _NAVER_BLOG_DISPLAY, city_meta,
+)
 from tb_helpers import (
     _count_spot_mentions,
+    _krw_per_unit,
     _map_link,
     _render_alert_md,
     _render_city_guide_md,
+    _render_cost_md,
+    _render_country_traits_md,
     _render_day_plan_md,
     _render_destinations_md,
     _render_essentials_md,
@@ -256,6 +261,118 @@ class CurationLogicTest(unittest.TestCase):
         self.assertIn("preserve", desc.lower())
         for kw in ("dates", "warnings", "map URLs"):
             self.assertIn(kw, desc)
+
+    def test_nights_parameter_states_nights_not_days(self) -> None:
+        """설명이 없으면 호스트 LLM 이 "2박3일"에서 뒤 숫자를 집어 nights=3 을 넘긴다 (실제 사고)."""
+        import asyncio
+
+        import travel_briefing_mcp as server
+
+        tools = asyncio.run(server.mcp.list_tools())
+        checked = 0
+        for t in tools:
+            prop = t.inputSchema["properties"].get("nights")
+            if not prop:
+                continue
+            with self.subTest(tool=t.name):
+                desc = prop.get("description", "")
+                self.assertIn("NIGHTS", desc)
+                self.assertIn("2박3일", desc)
+            checked += 1
+        self.assertGreaterEqual(checked, 3)
+
+    def test_exchange_unit_is_divided_before_converting_cost(self) -> None:
+        """수출입은행은 JPY·IDR 을 100단위로 고시한다 — 나누지 않으면 비용이 100배가 된다."""
+        self.assertAlmostEqual(
+            _krw_per_unit({"quoted": True, "rate": {"currency": "JPY(100)", "deal_bas_r": 913.27}}),
+            9.1327, places=4,
+        )
+        self.assertAlmostEqual(
+            _krw_per_unit({"quoted": True, "rate": {"currency": "IDR(100)", "deal_bas_r": 8.5}}),
+            0.085, places=4,
+        )
+        # 단위 표기가 없는 통화는 1단위 그대로
+        self.assertAlmostEqual(
+            _krw_per_unit({"quoted": True, "rate": {"currency": "CNH", "deal_bas_r": 190.5}}),
+            190.5, places=4,
+        )
+        # 미고시 통화는 환산 불가 → None
+        self.assertIsNone(_krw_per_unit({"quoted": False, "rate": None, "usd": {"deal_bas_r": 1380}}))
+
+    def test_daily_cost_covers_every_curated_city(self) -> None:
+        """큐레이션 도시인데 비용이 없으면 코스만 나오고 예산이 빠진다."""
+        for country in CURATED_COUNTRIES:
+            path = ROOT / "curation" / f"destinations_{country.lower()}.json"
+            with path.open(encoding="utf-8") as f:
+                cities = json.load(f)["cities"]
+            for city_key in cities:
+                with self.subTest(country=country, city=city_key):
+                    cost = _CITY_DAILY_COST.get(city_key)
+                    self.assertIsNotNone(cost)
+                    for k in ("transport", "food", "admission"):
+                        self.assertGreater(cost.get(k, 0), 0)
+
+    def test_cost_section_shows_totals_and_degrades_without_quote(self) -> None:
+        """비용은 서버가 확정 숫자로 줘야 호스트 LLM 이 지어내지 않는다."""
+        exch = {"quoted": True,
+                "rate": {"currency": "JPY(100)", "deal_bas_r": 913.27,
+                         "search_date": "2026-07-17", "is_stale": False}}
+        md = "\n".join(_render_cost_md("JP", "tokyo", exch, 2))
+        self.assertIn("8,700 JPY", md)          # 1200 + 6000 + 1500
+        self.assertIn("26,100 JPY", md)         # 3일치
+        self.assertIn("약 79,000원", md)         # 8700 * 9.1327 반올림
+        self.assertNotIn("항공", md.split("\n")[1])   # 항공·숙박은 합계에 넣지 않는다
+
+        # 미고시 통화는 원화 환산 없이 현지 통화로만
+        vnd = "\n".join(_render_cost_md("VN", "danang", {"quoted": False, "rate": None}, 2))
+        self.assertIn("650,000 VND", vnd)
+        self.assertNotIn("원)", vnd)
+        self.assertIn("미고시", vnd)
+
+        # 비용 데이터가 없는 도시는 섹션 자체를 생략
+        self.assertEqual(_render_cost_md("JP", None, exch, 2), [])
+
+    def test_dated_event_is_hedged_when_departure_is_unknown(self) -> None:
+        """출발일 미정인데 특정일 행사를 확정 추천하면 여행 기간과 어긋난다 (QA v2 P0-3)."""
+        exact = "\n".join(_render_country_traits_md("JP", "tokyo", 8, "exact"))
+        self.assertIn("스미다가와 불꽃축제", exact)
+        self.assertNotIn("개최 기간을 확인", exact)
+
+        for basis in ("none", "month"):
+            with self.subTest(basis=basis):
+                hedged = "\n".join(_render_country_traits_md("JP", "tokyo", 8, basis))
+                self.assertIn("개최 기간을 확인", hedged)
+
+    def test_itinerary_drops_redundant_sections_when_day_plan_exists(self) -> None:
+        """호스트 LLM 출력 예산이 한정적이라(4,000자 → 600자) 코스를 살리려면 중복을 줄여야 한다."""
+        posts = [{"title": f"후기 {i}", "link": f"https://b.test/{i}",
+                  "description": "d" * 140, "bloggername": "b", "postdate": "20260709"}
+                 for i in range(5)]
+        d = resolve_trip_dates(None, None, None, 2)
+        kwargs = dict(
+            depart_month=8, estimated=True, nights=2,
+            visa={"required": False, "duration_days": 90},
+            alert={"level": 0, "level_name": "미발령",
+                   "issued_at": "-", "note": "-", "ok": True},
+            season={"season": "peak", "note": "성수기"}, basis=d["basis"],
+        )
+        with_plan = _render_itinerary_md(
+            "JP", "q", posts, d["depart"].isoformat(), d["return"].isoformat(),
+            None, "couple", None, "2박3일", "tokyo",
+            spots=self.spots("tokyo"), **kwargs,
+        )
+        without_plan = _render_itinerary_md(
+            "JP", "q", posts, d["depart"].isoformat(), d["return"].isoformat(),
+            None, "couple", None, "2박3일", None, spots=None, **kwargs,
+        )
+        # 코스가 있으면 방향 제안은 중복 → 생략, 후기는 2건으로 축약
+        self.assertNotIn("방향 제안", with_plan)
+        self.assertEqual(with_plan.count("https://b.test/"), 2)
+        self.assertIn("💰 1일 예상 경비", with_plan)
+        # 코스가 없으면 방향 제안과 후기 5건이 그대로 살아 있어야 한다
+        self.assertIn("방향 제안", without_plan)
+        self.assertEqual(without_plan.count("https://b.test/"), 5)
+        self.assertLess(len(with_plan), 3300)
 
     def test_naver_display_is_shared_by_fetch_and_warmer(self) -> None:
         default = inspect.signature(_fetch_naver_blog).parameters["display"].default

@@ -13,7 +13,8 @@ import re
 
 from tb_config import (
     _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW, _DOMESTIC_KW,
-    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PURPOSE_REASON, _PLAN_TIMING, _CITY_FOOD, _QUERY_VOCAB,
+    _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PURPOSE_REASON, _PLAN_TIMING,
+    _CITY_FOOD, _CITY_DAILY_COST, _QUERY_VOCAB,
     city_meta, today_kst,
 )
 
@@ -974,6 +975,75 @@ def _render_day_plan_md(
 
 _ALERT_ICON = {0: "🟢", 1: "🟡", 2: "🟠", 3: "🔴", 4: "⛔"}
 
+_COST_LABEL = {"transport": "교통", "food": "식비", "admission": "입장료·잡비"}
+
+
+def _krw_per_unit(exch: Optional[dict]) -> Optional[float]:
+    """
+    - 현지 통화 1단위당 원화를 계산하는 함수
+      수출입은행은 통화에 따라 100단위로 고시한다(JPY(100), IDR(100)) — 그대로 곱하면
+      비용이 100배로 부풀어 오르므로 고시 단위를 반드시 나눠야 한다.
+    ### Args:
+      - exch(Optional[dict]): get_exchange_for_country 결과
+    ### Returns:
+      - krw(Optional[float]): 현지 통화 1단위당 원화. 고시가 없으면 None
+    """
+    if not exch or not exch.get("quoted"):
+        return None
+    rate = exch.get("rate")
+    if not rate or not rate.get("deal_bas_r"):
+        return None
+    m = re.search(r"\((\d+)\)", rate.get("currency", ""))
+    divisor = int(m.group(1)) if m else 1
+    return float(rate["deal_bas_r"]) / divisor
+
+
+def _render_cost_md(
+    country: str, city: Optional[str], exch: Optional[dict], nights: int,
+) -> list[str]:
+    """
+    - 1일 예상 경비와 여행 전체 합계를 마크다운으로 만드는 함수
+      호스트 LLM 이 비용을 지어내는 것(근거 없는 '1인 70만원')을 막으려면 서버가 확정 숫자를
+      줘야 한다. 항공·숙박은 변동이 커서 제외하고, 현지에서 실제로 쓰는 돈만 다룬다.
+      원화 환산은 그날 매매기준율로 계산하며, 미고시 통화는 현지 통화로만 표기한다.
+    ### Args:
+      - country(str): 국가 코드
+      - city(Optional[str]): 도시 키
+      - exch(Optional[dict]): get_exchange_for_country 결과
+      - nights(int): 숙박 수 (여행 일수 = nights + 1)
+    ### Returns:
+      - lines(list[str]): 마크다운 라인 목록 (데이터 없으면 빈 리스트)
+    """
+    cost = _CITY_DAILY_COST.get(city or "")
+    if not cost:
+        return []
+
+    items = [(k, cost[k]) for k in ("transport", "food", "admission") if cost.get(k)]
+    if not items:
+        return []
+
+    daily_local = sum(v for _, v in items)
+    days = nights + 1
+    currency = _STATIC.get(country, {}).get("currency", "")
+    krw = _krw_per_unit(exch)
+
+    def money(local: float) -> str:
+        base = f"{local:,.0f} {currency}"
+        return f"{base} (약 {round(local * krw, -3):,.0f}원)" if krw else base
+
+    breakdown = " · ".join(f"{_COST_LABEL[k]} {v:,.0f}" for k, v in items)
+    lines = [
+        "## 💰 1일 예상 경비 (1인 · 항공·숙박 제외)",
+        f"- 🧮 **하루 합계**: {money(daily_local)}",
+        f"- 📊 **내역**({currency}): {breakdown}",
+        f"- 🗓 **{days}일 총액**: {money(daily_local * days)}",
+    ]
+    if not krw:
+        lines.append(f"- 💱 {currency} 는 수출입은행 미고시라 원화 환산은 현지 환전소 환율로 계산하세요")
+    lines.append("> 중급 기준 표준값입니다. 쇼핑·야간 활동은 별도이며 항공·숙박은 포함되지 않았습니다.")
+    lines.append("")
+    return lines
+
 
 def _trip_period_label(
     depart: str, ret: str, nights_str: str, basis: str, depart_month: int,
@@ -1098,7 +1168,9 @@ def _render_essentials_md(
     return ["## ✈️ 출발 전 필수 (요약)", *items, ""]
 
 
-def _render_country_traits_md(country: str, city: Optional[str], depart_month: int) -> list[str]:
+def _render_country_traits_md(
+    country: str, city: Optional[str], depart_month: int, basis: str = "exact",
+) -> list[str]:
     """
     - 국가·도시 특징(여행 팁 + 시즌 하이라이트)을 마크다운 라인 목록으로 만드는 함수
       일정 추천에 국가별 색깔(중국=결제앱/VPN, 태국=복장, 인니=비자 등)을 넣기 위함.
@@ -1106,20 +1178,28 @@ def _render_country_traits_md(country: str, city: Optional[str], depart_month: i
       - country(str): 국가 코드
       - city(Optional[str]): 도시 키. 지정 시 해당 도시의 시즌 하이라이트 포함
       - depart_month(int): 출발 월 (시즌 하이라이트 선택용)
+      - basis(str): 날짜 근거. 'exact' 가 아니면 특정일 행사를 확정 추천하지 않는다
     ### Returns:
       - lines(list[str]): 마크다운 라인 목록 (없으면 빈 리스트)
     """
     static = _STATIC.get(country, {})
     lines: list[str] = []
 
-    # 도시 시즌 하이라이트 — 출발 월의 계절에 맞는 것만
+    # 도시 시즌 하이라이트 — 출발 월의 계절에 맞는 것만.
+    # season_highlight 에는 '스미다가와 불꽃축제'처럼 날짜가 정해진 행사가 섞여 있다.
+    # 출발일이 미정인데 특정일 행사를 추천하면 여행 기간과 어긋난다 (QA v2 P0-3) →
+    # 날짜 근거가 없을 땐 확정 추천이 아니라 '확인해 보세요' 로 표현을 낮춘다.
     season_key = _QUERY_VOCAB.get("month_to_season", {}).get(depart_month)
     cities = city_meta(country)
     if city and city in cities and season_key:
         highlight = cities[city].get("season_highlight", {}).get(season_key)
         if highlight:
             season_ko = _SEASON_KO.get(season_key, "")
-            lines.append(f"- 🗓 **{season_ko} 하이라이트**: {highlight}")
+            if basis == "exact":
+                lines.append(f"- 🗓 **{season_ko} 하이라이트**: {highlight}")
+            else:
+                lines.append(f"- 🗓 **{season_ko} 하이라이트**: {highlight} "
+                             f"— 날짜가 정해진 행사는 출국일 확정 후 개최 기간을 확인하세요")
 
     tips = static.get("travel_tips", [])
     for t in tips:
@@ -1198,12 +1278,14 @@ def _render_itinerary_md(
     mentions = _count_spot_mentions(posts, spots or [])
 
     # 도시 미지정 = "어디 가면 좋아?" 가 질문의 핵심 → 목적에 맞는 도시부터 제안
+    has_day_plan = bool(city and spots)
     if not city:
         lines.extend(_render_city_picks_md(country, purpose, depart_month))
     # 도시가 정해졌고 큐레이션 스팟이 있으면 → 일자별 코스 뼈대를 재료로 제공
     elif spots:
         city_ko = cities.get(city, {}).get("name_ko", city)
         lines.extend(_render_day_plan_md(city_ko, spots, purpose, nights, mentions, country, city))
+        lines.extend(_render_cost_md(country, city, exch, nights))
 
     # 서로 다른 후기에 반복 등장한 큐레이션 명소 = 블로그에서 추출한 동적 인기 신호.
     # LLM 이 파편 스니펫을 종합하는 대신, 서버가 집계한 '몇 건의 후기가 언급했나'를 준다.
@@ -1217,8 +1299,12 @@ def _render_itinerary_md(
         lines.append("")
 
     # 목적별 여행 방향 — 같은 목적이라도 세부 방향(데이트/휴식/취미 등)에 따라
-    # 갈 곳이 달라지므로 방향을 함께 제시해 호스트 LLM 이 좁혀가게 함
-    if purpose and purpose in _PURPOSE_ANGLE:
+    # 갈 곳이 달라지므로 방향을 함께 제시해 호스트 LLM 이 좁혀가게 함.
+    # 단 일자별 코스가 이미 나갔다면 그 코스 자체가 방향의 구현물이라 중복이다.
+    # 호스트 LLM 출력 예산이 한정적이라(실측 4,000자 → 600자) 코스를 살리려면 여기서 줄여야 한다.
+    if has_day_plan:
+        pass
+    elif purpose and purpose in _PURPOSE_ANGLE:
         pa = _PURPOSE_ANGLE[purpose]
         lines.append(f"## 🎯 {pa['focus']} 방향 제안")
         for a in pa["angles"]:
@@ -1233,7 +1319,7 @@ def _render_itinerary_md(
         lines.append("")
 
     # 국가·도시 특징 (결제 수단·복장·비자 등 나라별 색깔)
-    lines.extend(_render_country_traits_md(country, city, depart_month))
+    lines.extend(_render_country_traits_md(country, city, depart_month, basis))
 
     if not posts:
         lines.append("> 블로그 검색 결과가 없습니다. 네이버 API 키를 확인하거나 잠시 후 다시 시도해주세요.")
@@ -1241,11 +1327,13 @@ def _render_itinerary_md(
 
     lines.append("## 📝 실제 여행자 후기")
     lines.append("")
-    # 집계는 전체(위 mentions)를 쓰되, 화면 노출은 상위 5건으로 (result 최소 크기)
-    # LLM 은 링크를 열지 못하므로 정제된 스니펫이 유일한 본문 신호 — 넉넉히 노출
-    for i, p in enumerate(posts[:5], 1):
+    # 집계는 전체(위 mentions)를 쓰되 노출은 최소로.
+    # 코스가 이미 나간 경우 후기는 출처 역할만 하면 되므로 2건·짧은 스니펫으로 줄인다
+    # (5건 = 전체의 24%를 차지했고, 압축 과정에서 코스 설명을 밀어냈다).
+    show, snippet_len = (2, 70) if has_day_plan else (5, 110)
+    for i, p in enumerate(posts[:show], 1):
         desc = p["description"]
-        desc = desc[:110] + "…" if len(desc) > 110 else desc
+        desc = desc[:snippet_len] + "…" if len(desc) > snippet_len else desc
         lines.append(f"**{i}. [{p['title']}]({p['link']})**")
         postdate = p.get("postdate", "")
         if len(postdate) == 8 and postdate.isdigit():
