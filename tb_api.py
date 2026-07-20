@@ -411,12 +411,15 @@ def _fetch_mofa_alert(country: str) -> dict:
     if cached is not None:
         return cached
 
+    # ok=False 는 "경보 없음(레벨 0)" 이 아니라 "확인하지 못함" — 렌더러가 🟢 대신 ⚪ 로 표시한다.
     if not os.getenv("MOFA_API_KEY"):
-        return {"level": 0, "level_name": "정보 없음", "issued_at": "-", "note": "API 키 미설정"}
+        return {"level": 0, "level_name": "확인 필요", "issued_at": "-",
+                "note": "실시간 조회 불가 — 출발 전 0404.go.kr 확인", "ok": False}
 
     all_data = _fetch_mofa_warn_all()
     if all_data is None:
-        return {"level": 0, "level_name": "조회 실패", "issued_at": "-", "note": "출발 전 0404.go.kr 재확인"}
+        return {"level": 0, "level_name": "실시간 확인 실패", "issued_at": "-",
+                "note": "출발 전 0404.go.kr 재확인", "ok": False}
 
     iso = _MOFA_COUNTRY_CODE.get(country)
     item = all_data.get(iso) if iso else None
@@ -424,6 +427,7 @@ def _fetch_mofa_alert(country: str) -> dict:
     result = _parse_warning_item(item) if item else {
         "level": 0, "level_name": "미발령", "issued_at": "-", "note": "-",
     }
+    result["ok"] = True   # 여기까지 왔으면 외교부 응답을 실제로 받은 것
     _cache.set(cache_key, result, _MOFA_ALERT_TTL_S)
     return result
 

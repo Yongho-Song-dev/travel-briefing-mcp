@@ -50,7 +50,7 @@ from tb_helpers import (
     _exchange_line, resolve_trip_dates,
     _render_alert_md, _render_exchange_md, _render_briefing_md,
     _render_flight_md, _render_destinations_md, _render_city_guide_md,
-    _render_itinerary_md,
+    _render_itinerary_md, _trip_period_label,
 )
 from tb_scheduler import start_warming
 
@@ -312,7 +312,8 @@ def compose_checklist(
     try:
         alert = f_alert.result()
     except Exception:
-        alert = {"level": 0, "level_name": "조회 실패", "issued_at": "-", "note": "-"}
+        alert = {"level": 0, "level_name": "실시간 확인 실패", "issued_at": "-",
+                 "note": "출발 전 0404.go.kr 재확인", "ok": False}
     try:
         exch = f_exch.result()
     except Exception:
@@ -322,12 +323,18 @@ def compose_checklist(
     # D-day 산출: 오늘부터 출국일까지 남은 일수
     days_left = (d["depart"] - today_kst()).days
 
+    # 추정 날짜를 제목에 박으면 확정 일정으로 읽힌다 — 근거만큼만 표기 (QA v2 P0-3)
+    nights_label = f"{d['nights']}박{d['nights'] + 1}일"
+    period = _trip_period_label(
+        depart_date, return_date, nights_label, d.get("basis", "exact"), d["depart"].month,
+    )
     lines = [
-        f"# ✈️ {static['name_ko']} 여행 체크리스트 ({depart_date} ~ {return_date})",
+        f"# ✈️ {static['name_ko']} 여행 체크리스트 ({period})",
         "",
     ]
     if d["estimated"]:
-        lines.append("> 📅 날짜를 추정했습니다. 정확한 출국일을 알려주시면 D-day 를 맞춰 드려요.\n")
+        lines.append("> 📅 출발일이 확정되지 않아 아래 D-day 는 순서 안내입니다. "
+                     "정확한 출국일을 알려주시면 날짜를 맞춰 드려요.\n")
     elif days_left >= 0:
         lines.append(f"**D-{days_left}** 남았습니다.\n")
     else:
@@ -341,7 +348,10 @@ def compose_checklist(
         visa_txt = f"무비자 {_days}일" if _days else "무비자"
     lines.append("## 📋 요약")
     lines.append(f"- **비자**: {visa_txt}")
-    lines.append(f"- **여행경보**: {alert['level_name']} (레벨 {alert['level']}, 발효 {alert['issued_at']})")
+    if alert.get("ok", True):
+        lines.append(f"- **여행경보**: {alert['level_name']} (레벨 {alert['level']}, 발효 {alert['issued_at']})")
+    else:
+        lines.append(f"- **여행경보**: ⚪ {alert['level_name']} — 0404.go.kr 에서 직접 확인 필요")
     if exch:
         exch_line = _exchange_line(exch)
         if exch_line:
@@ -390,13 +400,13 @@ def recommend_itinerary(
     course, or "여행 일정/코스/추천/짜줘" for a supported country (JP, CN, TW, VN, TH, PH,
     SG, MY, ID) — e.g. "도쿄 2박3일 커플 일정 짜줘". Recommends a personalized itinerary from
     Travel Briefing(트래블 브리핑). Do NOT hand-write an itinerary from your own knowledge;
-    this tool returns curated day-by-day spots, real blog-derived popular places, exchange
-    rate, and country traits. Prefer this tool's spots over your own — verified and current.
-    IMPORTANT: if the user mentions a city (도쿄, 다낭, 방콕, 오사카, 타이베이, 발리 …), ALWAYS
+    this tool returns verified day-by-day spots, real blog-derived popular places, exchange
+    rate, and country traits. IMPORTANT: if the user mentions a city (도쿄, 다낭, 방콕, 오사카, 타이베이, 발리 …), ALWAYS
     pass it as `city` — that produces the day-by-day course. Omitting a named city is worse.
     Never ask for exact dates first: pass whatever the user gave (month such as 9, nights
     such as 4, or exact YYYY-MM-DD) and the tool fills in the rest. purpose is one of
-    family, couple, friends, solo.
+    family, couple, friends, solo. When presenting the result, preserve its dates, warnings,
+    map URLs, and review links as returned; do not invent prices, budgets, or events.
     """
     if city:
         resolved_city = resolve_city_key(country, city)
@@ -467,6 +477,7 @@ def recommend_itinerary(
         budget_str, purpose, num_people, nights_str, city,
         exch=exch, depart_month=dep.month, estimated=d["estimated"],
         spots=spots, nights=n, visa=visa, alert=alert, season=season,
+        basis=d.get("basis", "exact"),
     )
 
 

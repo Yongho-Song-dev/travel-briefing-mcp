@@ -8,6 +8,7 @@ tb_api 를 임포트하지 않는다 (렌더러에 필요한 동적 값은 인�
 from __future__ import annotations
 from typing import Optional
 from datetime import date, datetime, timedelta
+from urllib.parse import urlencode
 import re
 
 from tb_config import (
@@ -19,18 +20,17 @@ from tb_config import (
 
 def _map_link(country: str, query: str) -> str:
     """
-    - 스팟 지도 링크를 국가에 맞는 지도 서비스로 생성하는 함수
-      일본은 카카오맵(한국인 익숙 + 일본 커버 양호), 그 외는 구글맵(전 세계 커버).
+    - 모든 지원 국가의 스팟을 Google Maps 검색 링크로 생성하는 함수
+      공식 Maps URL 형식(api=1)을 사용해 웹과 Google Maps 앱에서 동일하게 연다.
     ### Args:
       - country(str): 국가 코드
       - query(str): 검색어 (search_query)
     ### Returns:
       - url(str): 지도 검색 URL
     """
-    from urllib.parse import quote
-    if country == "JP":
-        return f"https://map.kakao.com/?q={query}"
-    return f"https://www.google.com/maps/search/{quote(query)}"
+    # country 는 호출부 호환성과 향후 국가별 공급자 확장을 위해 유지한다.
+    _ = country
+    return f"https://www.google.com/maps/search/?{urlencode({'api': '1', 'query': query})}"
 
 
 def _dwell_hint(spot: dict) -> str:
@@ -187,11 +187,14 @@ def resolve_trip_dates(
       - month(Optional[int]): 출발 월 1~12 ("9월에" → 9). 이미 지난 달이면 내년으로 해석
       - nights(Optional[int]): 숙박 수 ("4박5일" → 4)
     ### Returns:
-      - result(dict): {'depart': date, 'return': date, 'nights': int, 'estimated': bool}
+      - result(dict): {'depart': date, 'return': date, 'nights': int,
+                       'estimated': bool, 'basis': 'exact'|'month'|'none'}
                       estimated=True 면 날짜를 추정한 것 (응답에 안내 문구 표시)
+                      basis 는 무엇을 근거로 잡았는지 — 추정값을 확정 날짜처럼 보이지 않게 표기할 때 쓴다
     """
     today = today_kst()
     estimated = False
+    basis = "exact"
 
     # 1) 출국일
     dep: Optional[date] = None
@@ -202,6 +205,7 @@ def resolve_trip_dates(
             dep = None
     if dep is None:
         estimated = True
+        basis = "month" if (month and 1 <= month <= 12) else "none"
         if month and 1 <= month <= 12:
             # 이미 지난 달을 말했다면 내년 그 달로 해석 (7월에 "3월" → 내년 3월)
             year = today.year if month >= today.month else today.year + 1
@@ -222,7 +226,8 @@ def resolve_trip_dates(
         n = nights if (nights and nights > 0) else 3   # 기본 3박4일
 
     return {"depart": dep, "return": dep + timedelta(days=n),
-            "nights": n, "estimated": estimated}
+            "nights": n, "estimated": estimated, "basis": basis,
+            "month": month if basis == "month" else None}
 
 
 def _build_naver_query(
@@ -321,11 +326,16 @@ def _render_alert_md(country: str, alert: dict) -> str:
       - md(str): 경보 단계·발효일·요약 마크다운
     """
     s = _STATIC[country]
-    icon = {0: "🟢", 1: "🟡", 2: "🟠", 3: "🔴", 4: "⛔"}.get(alert["level"], "⚪")
+    ok = alert.get("ok", True)
+    # 조회 실패를 🟢(안전 확인됨)으로 보이면 안 된다 — 실패는 레벨이 아니라 상태 미확인이다
+    icon = _ALERT_ICON.get(alert["level"], "⚪") if ok else "⚪"
     note_line = f"\n**요약**: {alert['note']}" if alert.get("note") and alert["note"] not in ("-", "") else ""
+    level_line = (f"{icon} **경보 단계**: {alert['level_name']} (레벨 {alert['level']})"
+                  if ok else
+                  f"{icon} **경보 단계**: {alert['level_name']} — 외교부 실시간 조회에 실패했습니다")
     return (
         f"# {s['name_ko']} 현재 안전 상황\n\n"
-        f"{icon} **경보 단계**: {alert['level_name']} (레벨 {alert['level']})\n"
+        f"{level_line}\n"
         f"**발효일**: {alert['issued_at']}{note_line}\n\n"
         f"> 상세 안내는 외교부 해외안전여행([0404.go.kr](https://www.0404.go.kr)) 확인."
     )
@@ -480,7 +490,7 @@ def _render_destinations_md(
     last_reviewed: str = "-", country: str = "JP",
 ) -> str:
     """
-    - 도시 스팟 목록을 카카오맵 검색 링크와 상태 배지 포함해 마크다운으로 렌더링하는 함수
+    - 도시 스팟 목록을 Google Maps 검색 링크와 상태 배지 포함해 마크다운으로 렌더링하는 함수
       status='under_renovation' 은 명시적으로 표시해 오탐을 줄인다.
     ### Args:
       - city_data(dict): destinations_jp.json 의 cities.<key>
@@ -521,11 +531,11 @@ def _render_destinations_md(
             elif s.get("status") == "seasonal":
                 badges.append("🗓 시즌 한정")
             badge_str = f" {' '.join(badges)}" if badges else ""
-            kakao_link = _map_link(country, s["search_query"])
+            map_link = _map_link(country, s["search_query"])
             lines.append(
                 f"- **{s['name_ko']}** ({s['name_local']}){badge_str}\n"
                 f"  - {s['one_liner']}\n"
-                f"  - [카카오맵에서 보기]({kakao_link})"
+                f"  - [Google 지도에서 보기]({map_link})"
             )
         lines.append("")
 
@@ -955,8 +965,9 @@ def _render_day_plan_md(
             prev_spot = spot
         lines.append("")
 
-    lines.append("> 체류·이동 시간은 대략치입니다. 위 뼈대에 식사 메뉴를 더해 안내해 주세요. "
-                 "숙소 위치에 따라 순서는 조정 가능합니다.")
+    # 호스트 LLM 에게 시키는 지시문을 두면, 작은 모델이 못 따라갈 때 미완성 문장이 그대로 노출되고
+    # 수행하는 과정에서 링크·경고를 지운다 (QA v2 P1-4) → 사용자용 문장으로만 마무리한다.
+    lines.append("> 체류·이동 시간은 대략치이며, 숙소 위치에 따라 순서를 바꿔도 무리 없는 동선입니다.")
     lines.append("")
     return lines
 
@@ -964,9 +975,73 @@ def _render_day_plan_md(
 _ALERT_ICON = {0: "🟢", 1: "🟡", 2: "🟠", 3: "🔴", 4: "⛔"}
 
 
+def _trip_period_label(
+    depart: str, ret: str, nights_str: str, basis: str, depart_month: int,
+) -> str:
+    """
+    - 여행 기간을 '근거 있는 만큼만' 표기하는 함수
+      날짜를 추정했는데 구체적 날짜를 노출하면 호스트 LLM 이 확정 일정으로 전달하고,
+      그 날짜에 맞지 않는 행사·시즌 정보를 붙이는 문제가 있다 (QA v2 P0-3).
+    ### Args:
+      - depart(str): 출국일 'YYYY-MM-DD'
+      - ret(str): 귀국일 'YYYY-MM-DD'
+      - nights_str(str): '2박3일' 형태 표기
+      - basis(str): 'exact'(날짜 입력) | 'month'(월만 입력) | 'none'(단서 없음)
+      - depart_month(int): 출발 월
+    ### Returns:
+      - label(str): 기간 표기 문자열
+    """
+    if basis == "exact":
+        return f"{depart} ~ {ret} ({nights_str})"
+    if basis == "month":
+        return f"{depart_month}월 여행 기준 · {nights_str} (출발일 미정)"
+    return f"출발일 미정 · {nights_str} 기준"
+
+
+_EMERGENCY_KO = {
+    "police": "경찰", "ambulance": "구급", "fire": "소방", "tourist_police": "관광경찰",
+}
+
+
+def _render_practical_lines(country: Optional[str]) -> list[str]:
+    """
+    - 전압·시차·긴급번호를 한 줄씩 압축해 붙이는 함수
+      "준비사항도 알려줘" 요청에 일정 툴 하나로 답하려면 필요하지만, 응답이 길어질수록
+      호스트 LLM 이 더 공격적으로 압축한다 → 항목당 한 줄, 데이터 라인 형태로만 넣는다.
+    ### Args:
+      - country(Optional[str]): 국가 코드. None 이면 빈 리스트
+    ### Returns:
+      - lines(list[str]): 마크다운 라인 목록
+    """
+    static = _STATIC.get(country or "", {})
+    if not static:
+        return []
+
+    lines: list[str] = []
+
+    voltage, plug = static.get("voltage"), static.get("plug") or []
+    if voltage:
+        plug_txt = f" · {'/'.join(plug)}타입 플러그" if plug else ""
+        need = " (한국 220V 기기는 변압기 확인)" if voltage.startswith("1") else " (한국과 동일해 그대로 사용)"
+        lines.append(f"- 🔌 **전압**: {voltage}{plug_txt}{need}")
+
+    tz = static.get("tz_offset_h")
+    if tz is not None:
+        tz_txt = "한국과 시차 없음" if tz == 0 else f"한국보다 {abs(tz)}시간 {'느림' if tz < 0 else '빠름'}"
+        lines.append(f"- 🕘 **시차**: {tz_txt}")
+
+    emergency = static.get("emergency") or {}
+    if emergency:
+        nums = " · ".join(f"{_EMERGENCY_KO.get(k, k)} {v}" for k, v in emergency.items())
+        lines.append(f"- 🚨 **긴급번호**: {nums} · 영사콜센터 +82-2-3210-0404")
+
+    return lines
+
+
 def _render_essentials_md(
     exch: Optional[dict], visa: Optional[dict],
     alert: Optional[dict], season: Optional[dict],
+    country: Optional[str] = None,
 ) -> list[str]:
     """
     - 출발 전 필수 정보(비자·안전·환율·시즌)를 한 줄씩 요약하는 함수
@@ -990,9 +1065,12 @@ def _render_essentials_md(
             items.append(f"- 🛂 **비자**: 무비자{f' {days}일' if days else ''}")
 
     if alert:
-        icon = _ALERT_ICON.get(alert.get("level", 0), "⚪")
+        ok = alert.get("ok", True)
+        icon = _ALERT_ICON.get(alert.get("level", 0), "⚪") if ok else "⚪"
         line = f"- {icon} **안전**: {alert.get('level_name', '정보 없음')}"
-        if alert.get("level", 0) >= 2:
+        if not ok:
+            line += " — 외교부 해외안전여행(0404.go.kr)에서 직접 확인하세요"
+        elif alert.get("level", 0) >= 2:
             line += " — 방문 전 외교부(0404.go.kr) 확인 권장"
         items.append(line)
 
@@ -1011,6 +1089,9 @@ def _render_essentials_md(
         if note and "표시 없음" not in note and tip:
             detail = f"{note} ({tip})"
         items.append(f"- 🗓 **시즌**: {detail}")
+
+    # 전압·시차·긴급번호 — 준비사항 질문에 일정 툴 하나로 답하기 위한 최소 실용 정보
+    items.extend(_render_practical_lines(country))
 
     if not items:
         return []
@@ -1062,6 +1143,7 @@ def _render_itinerary_md(
     visa: Optional[dict] = None,
     alert: Optional[dict] = None,
     season: Optional[dict] = None,
+    basis: str = "exact",
 ) -> str:
     """
     - 출발 전 필수 요약 + 일자별 코스 + 여행 방향 + 국가 특징 + 후기를 종합하는 함수
@@ -1088,7 +1170,9 @@ def _render_itinerary_md(
         if city_ko != static["name_ko"]:  # 도시국가(싱가포르) 중복 표기 방지
             city_label = f" · {city_ko}"
 
-    cond = [f"**일정**: {depart} ~ {ret} ({nights_str})"]
+    # 사용자가 날짜를 말하지 않았는데 구체적 날짜를 보여주면 호스트 LLM 이 확정 일정으로 옮겨 적는다.
+    # (v2 QA: 8월 추정 일정에 7월 행사를 붙이는 모순이 실제로 발생) → 근거만큼만 표기한다.
+    cond = [f"**일정**: {_trip_period_label(depart, ret, nights_str, basis, depart_month)}"]
     if num_people:
         cond.append(f"**인원**: {num_people}명")
     if purpose:
@@ -1103,11 +1187,12 @@ def _render_itinerary_md(
         "",
     ]
     if estimated:
-        lines.append("> 📅 정확한 날짜를 알려주시면 시즌·항공 정보가 더 정확해집니다.")
+        lines.append("> 📅 출발일이 정해지지 않아 아래 일정은 날짜가 아닌 순서 기준입니다. "
+                     "정확한 출국일을 알려주시면 시즌·항공·행사 정보를 맞춰 드려요.")
         lines.append("")
 
     # 출발 전 필수 요약 — 비자·안전·환율·시즌 (여행 질문 하나로 준비 전체가 보이도록)
-    lines.extend(_render_essentials_md(exch, visa, alert, season))
+    lines.extend(_render_essentials_md(exch, visa, alert, season, country))
 
     # 블로그 스니펫에서 큐레이션 스팟 언급을 집계 (동적 인기 신호)
     mentions = _count_spot_mentions(posts, spots or [])
@@ -1128,8 +1213,7 @@ def _render_itinerary_md(
         lines.append("최근 검색된 실제 여행 후기들이 공통으로 언급한 곳입니다 (검색 시점마다 갱신).")
         for name, c in hot[:6]:
             lines.append(f"- **{name}** — 후기 {c}건 언급")
-        lines.append("> 위 명소는 요즘 실제로 많이 가는 곳입니다. 일정에 우선 반영하고, "
-                     "아래 후기 내용을 근거로 자세히 설명해 주세요.")
+        lines.append("> 방문객 순위가 아니라, 최근 검색된 후기들이 반복해서 언급한 신호입니다.")
         lines.append("")
 
     # 목적별 여행 방향 — 같은 목적이라도 세부 방향(데이트/휴식/취미 등)에 따라
