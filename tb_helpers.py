@@ -685,16 +685,16 @@ def _pick_spots_for_purpose(
 
     picked: list[dict] = []
     while len(picked) < want:
-        added = False
-        for cat in order:                      # 카테고리를 돌아가며 하나씩
-            if by_cat.get(cat):
-                picked.append(by_cat[cat].pop(0))
-                added = True
-                if len(picked) >= want:
-                    break
-        if not added:                          # 스팟이 동남
+        # 한 라운드 = 카테고리마다 한 곳씩 (하루가 단조롭지 않도록)
+        round_spots = [by_cat[cat].pop(0) for cat in order if by_cat.get(cat)]
+        if not round_spots:                    # 스팟이 동남
             break
-    return picked
+        # 같은 라운드 안에서는 후기 언급이 많은 곳을 앞에 둔다.
+        # 뒤에서 슬롯이 모자라면 꼬리부터 잘리므로 이 순서가 곧 '배치될 확률'이다.
+        # (라운드를 넘나드는 정렬은 하지 않는다 — 카테고리 다양성이 깨진다)
+        round_spots.sort(key=lambda s: -mentions.get(s["name_ko"], 0))
+        picked.extend(round_spots)
+    return picked[:want]
 
 
 def _spot_match_keys(spot: dict) -> set[str]:

@@ -19,6 +19,7 @@ from tb_config import (
 from tb_helpers import (
     _count_spot_mentions,
     _krw_per_unit,
+    _pick_spots_for_purpose,
     _map_link,
     _render_alert_md,
     _render_city_guide_md,
@@ -261,6 +262,28 @@ class CurationLogicTest(unittest.TestCase):
         self.assertIn("preserve", desc.lower())
         for kw in ("dates", "warnings", "map URLs"):
             self.assertIn(kw, desc)
+
+    def test_frequently_mentioned_spots_reach_the_day_plan(self) -> None:
+        """🔥 인기 명소로 뽑아 놓고 코스에는 없으면 응답이 자기모순이다.
+        시부야는 후기 2건 언급인데도 배치 순서 꼬리에 밀려 잘렸던 실제 사례."""
+        mentions = {"센소지 (아사쿠사)": 2, "긴자": 2, "시부야": 2}
+        for nights in (2, 3):
+            with self.subTest(nights=nights):
+                md = "\n".join(_render_day_plan_md(
+                    "도쿄", self.spots("tokyo"), "couple", nights,
+                    mentions, "JP", "tokyo",
+                ))
+                for name in mentions:
+                    self.assertIn(name, md)
+
+    def test_mentions_do_not_disturb_order_when_absent(self) -> None:
+        """언급 데이터가 없을 때(검색 실패·콜드스타트)는 기존 카테고리 순서를 그대로 지킨다."""
+        spots = [s for s in self.spots("tokyo") if s["category"] != "food"]
+        baseline = _pick_spots_for_purpose(spots, "couple", 7, None)
+        empty = _pick_spots_for_purpose(spots, "couple", 7, {})
+        self.assertEqual([s["name_ko"] for s in baseline], [s["name_ko"] for s in empty])
+        # 카테고리 다양성 유지 — 첫 라운드에 목적 카테고리가 골고루 들어간다
+        self.assertGreaterEqual(len({s["category"] for s in baseline[:4]}), 3)
 
     def test_nights_parameter_states_nights_not_days(self) -> None:
         """설명이 없으면 호스트 LLM 이 "2박3일"에서 뒤 숫자를 집어 nights=3 을 넘긴다 (실제 사고)."""
