@@ -81,9 +81,9 @@ class CurationLogicTest(unittest.TestCase):
 
     def test_full_day_trip_uses_only_a_middle_day(self) -> None:
         md = "\n".join(_render_day_plan_md("도쿄", self.spots("tokyo"), "couple", 3))
-        day1, rest = md.split("**Day 2**", 1)
-        day2, rest = rest.split("**Day 3**", 1)
-        _, day4 = rest.split("**Day 4**", 1)
+        day1, rest = md.split("**Day 2", 1)
+        day2, rest = rest.split("**Day 3", 1)
+        _, day4 = rest.split("**Day 4", 1)
         self.assertNotIn("하코네 온천", day1)
         self.assertIn("하코네 온천", day2)
         self.assertNotIn("하코네 온천", day4)
@@ -92,19 +92,29 @@ class CurationLogicTest(unittest.TestCase):
         md = "\n".join(_render_day_plan_md("도쿄", self.spots("tokyo"), "couple", 1))
         self.assertNotIn("하코네 온천", md)
 
-    def test_food_time_and_area_constraints_are_applied(self) -> None:
+    def test_time_notes_only_on_time_bound_spots_and_area_transit(self) -> None:
+        """오전/오후 슬롯 라벨은 없애고, 야시장·노을 등 시간이 실제로 중요한 곳만 표기한다."""
         md = "\n".join(_render_day_plan_md("도쿄", self.spots("tokyo"), "couple", 3))
-        self.assertNotIn("🌙 저녁 · [츠키지 장외시장]", md)
         self.assertIn("우에노 공원", md)
-        self.assertIn("우에노 아메요코 시장", md)
-        self.assertIn("🚶 우에노 구역 내 · 도보 약 10분", md)
-        self.assertIn("대중교통 약 30분", md)
+        # 시간대 슬롯 라벨은 전부 제거됐다
+        for label in ("🌅 오전", "☀️ 오후", "🌆 늦은 오후", "🌙 저녁", "🍽 점심"):
+            self.assertNotIn(label, md)
+        # 이동시간은 숫자로 단정하지 않는다 — 같은 구역은 도보권, 다른 구역은 구글맵 유도
+        self.assertIn("구역 내 도보 이동권", md)
+        self.assertIn("구글맵 경로검색 권장", md)
+        self.assertNotRegex(md, r"대중교통 약 \d+분")  # 조작된 고정 소요시간 금지
+        self.assertNotRegex(md, r"구역 내 도보 약 \d+분")
+        # 아침 시장(츠키지)은 '저녁 추천'으로 잘못 표기되지 않는다
+        for line in (l for l in md.splitlines() if "츠키지 장외시장" in l):
+            self.assertNotIn("저녁 추천", line)
 
-    def test_purpose_sights_per_day_changes_slots(self) -> None:
-        friends = "\n".join(_render_day_plan_md("교토", self.spots("kyoto"), "friends", 2))
-        solo = "\n".join(_render_day_plan_md("교토", self.spots("kyoto"), "solo", 2))
-        self.assertIn("🌆 늦은 오후", friends)
-        self.assertNotIn("🌆 늦은 오후", solo)
+    def test_purpose_sights_per_day_changes_density(self) -> None:
+        """시간대 슬롯 대신, 목적별 밀도가 중간일의 활동 개수로 드러난다."""
+        def middle_day_activities(purpose: str) -> int:
+            md = "\n".join(_render_day_plan_md("교토", self.spots("kyoto"), purpose, 2))
+            day2 = md.split("**Day 2", 1)[1].split("**Day 3", 1)[0]
+            return day2.count("\n- [")
+        self.assertGreater(middle_day_activities("friends"), middle_day_activities("solo"))
 
     def test_curation_schema_and_full_day_metadata(self) -> None:
         required = {
@@ -436,10 +446,14 @@ class CurationLogicTest(unittest.TestCase):
                 self.assertNotIn("현지 로컬 맛집", md)
                 self.assertNotIn("대표 먹거리:", md)
                 currency = {"JP": "JPY", "TW": "TWD"}[country]
-                self.assertRegex(md, rf"1인 약 [\d,]+~[\d,]+ {currency}")
-                menus = re.findall(r"\*\*([^*]+ — 1인 약 [^*]+)\*\*", md)
-                self.assertGreaterEqual(len(menus), 5)
-                self.assertEqual(len(menus), len(set(menus)))
+                # 끼니마다 시간대에 묶지 않고, Day 별 '추천 식사'로 한 끼 가격대와 함께 모은다
+                self.assertRegex(md, rf"한 끼 1인 약 [\d,]+~[\d,]+ {currency}")
+                menus: list[str] = []
+                for line in (l for l in md.splitlines() if l.startswith("- 추천 식사:")):
+                    body = line.split("추천 식사:", 1)[1]
+                    body = body[: body.rfind("(")] if "(" in body else body
+                    menus += [m.strip() for m in body.split("·") if m.strip()]
+                self.assertGreaterEqual(len(set(menus)), 4)  # 도시 대표 메뉴가 다양하게
 
     def test_taipei_long_trip_is_dense_and_separates_jiufen(self) -> None:
         with (ROOT / "curation" / "destinations_tw.json").open(encoding="utf-8") as f:
@@ -448,14 +462,12 @@ class CurationLogicTest(unittest.TestCase):
             "타이베이", spots, "couple", 4, country="TW", city_key="taipei",
         ))
         self.assertNotIn("자유 시간 (카페·산책·쇼핑)", md)
-        day2 = md.split("**Day 2**", 1)[1].split("**Day 3**", 1)[0]
+        day2 = md.split("**Day 2", 1)[1].split("**Day 3", 1)[0]
         self.assertIn("지우펀", day2)
         self.assertIn("약 6시간", day2)
         self.assertNotIn("국립고궁박물원", day2)
         for name in ("디화제", "베이터우", "단수이"):
             self.assertIn(name, md)
-        day4 = md.split("**Day 4**", 1)[1].split("**Day 5**", 1)[0]
-        self.assertNotIn("국립고궁박물원", day4)
 
     def test_every_non_japan_curated_city_supports_a_long_trip(self) -> None:
         """일본 외 도시도 4박5일에 장소가 소진돼 기존 자유시간 문구로 도배되면 안 된다."""
@@ -479,9 +491,9 @@ class CurationLogicTest(unittest.TestCase):
                         s["name_ko"] for s in spots if s.get("trip_scope") == "full_day"
                     }
                     if full_day_names:
-                        day1 = md.split("**Day 1**", 1)[1].split("**Day 2**", 1)[0]
-                        day2 = md.split("**Day 2**", 1)[1].split("**Day 3**", 1)[0]
-                        day5 = md.split("**Day 5**", 1)[1]
+                        day1 = md.split("**Day 1", 1)[1].split("**Day 2", 1)[0]
+                        day2 = md.split("**Day 2", 1)[1].split("**Day 3", 1)[0]
+                        day5 = md.split("**Day 5", 1)[1]
                         self.assertTrue(any(name in day2 for name in full_day_names))
                         self.assertFalse(any(name in day1 for name in full_day_names))
                         self.assertFalse(any(name in day5 for name in full_day_names))

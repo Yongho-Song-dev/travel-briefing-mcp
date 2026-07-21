@@ -31,6 +31,7 @@
           "name_ko": "마젤란 십자가",
           "name_local": "Magellan's Cross",
           "category": "culture",
+          "area": "세부 올드타운",
           "one_liner": "1521년 필리핀 기독교 발상지",
           "best_season": [
             "all"
@@ -44,6 +45,7 @@
           "name_ko": "산토니뇨 성당",
           "name_local": "Basilica del Santo Niño",
           "category": "culture",
+          "area": "세부 올드타운",
           "one_liner": "필리핀 최고령 성당(1565)",
           "best_season": [
             "all"
@@ -60,6 +62,7 @@
           "name_ko": "카와산 폭포",
           "name_local": "Kawasan Falls",
           "category": "nature",
+          "area": "바디안(근교)",
           "one_liner": "청록빛 3단 폭포",
           "best_season": [
             "winter",
@@ -77,6 +80,7 @@
           "name_ko": "톱스 전망대",
           "name_local": "Tops Lookout",
           "category": "nature",
+          "area": "부사이",
           "one_liner": "세부시티 야경 명소",
           "best_season": [
             "all"
@@ -94,6 +98,7 @@
           "name_ko": "카르본 시장",
           "name_local": "Carbon Market",
           "category": "food",
+          "area": "세부 올드타운",
           "one_liner": "세부 최대 재래시장",
           "best_season": [
             "all"
@@ -145,6 +150,7 @@
           "name_ko": "화이트 비치",
           "name_local": "White Beach",
           "category": "nature",
+          "area": "화이트 비치",
           "one_liner": "4km 백사장 대표 해변",
           "best_season": [
             "winter",
@@ -162,6 +168,7 @@
           "name_ko": "푸카 비치",
           "name_local": "Puka Beach",
           "category": "nature",
+          "area": "푸카",
           "one_liner": "조개껍질 자연 해변",
           "best_season": [
             "winter",
@@ -176,6 +183,7 @@
           "name_ko": "윌리스 록",
           "name_local": "Willy's Rock",
           "category": "culture",
+          "area": "화이트 비치",
           "one_liner": "성모상 화산 바위섬",
           "best_season": [
             "all"
@@ -189,6 +197,7 @@
           "name_ko": "불라복 비치",
           "name_local": "Bulabog Beach",
           "category": "nature",
+          "area": "불라복",
           "one_liner": "카이트·윈드서핑 해변",
           "best_season": [
             "winter"
@@ -218,6 +227,7 @@
           "name_ko": "디몰",
           "name_local": "D'Mall",
           "category": "food",
+          "area": "화이트 비치",
           "one_liner": "중심 상점가·먹거리",
           "best_season": [
             "all"

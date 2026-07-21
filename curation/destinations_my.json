@@ -11,6 +11,7 @@
           "name_ko": "페트로나스 트윈타워",
           "name_local": "Petronas Twin Towers",
           "category": "culture",
+          "area": "KLCC",
           "one_liner": "452m 쌍둥이 마천루",
           "best_season": [
             "all"
@@ -29,6 +30,7 @@
           "name_ko": "바투 동굴",
           "name_local": "Batu Caves",
           "category": "culture",
+          "area": "바투(근교)",
           "one_liner": "석회암 동굴 힌두 사원",
           "best_season": [
             "all"
@@ -45,6 +47,7 @@
           "name_ko": "KL 타워",
           "name_local": "Menara KL",
           "category": "culture",
+          "area": "KL 타워",
           "one_liner": "421m 전망 타워",
           "best_season": [
             "all"
@@ -62,6 +65,7 @@
           "name_ko": "자멕 모스크",
           "name_local": "Masjid Jamek",
           "category": "culture",
+          "area": "구시가(자멕)",
           "one_liner": "무어양식 강변 모스크",
           "best_season": [
             "all"
@@ -75,6 +79,7 @@
           "name_ko": "부킷빈탕",
           "name_local": "Bukit Bintang",
           "category": "shopping",
+          "area": "부킷빈탕",
           "one_liner": "쇼핑·먹거리 중심가",
           "best_season": [
             "all"
@@ -88,6 +93,7 @@
           "name_ko": "센트럴 마켓",
           "name_local": "Central Market",
           "category": "food",
+          "area": "구시가(자멕)",
           "one_liner": "재래시장·공예품·먹거리",
           "best_season": [
             "all"

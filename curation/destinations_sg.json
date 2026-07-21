@@ -11,6 +11,7 @@
           "name_ko": "마리나베이 샌즈",
           "name_local": "Marina Bay Sands",
           "category": "culture",
+          "area": "마리나베이",
           "one_liner": "루프탑 인피니티풀 랜드마크",
           "best_season": [
             "all"
@@ -28,6 +29,7 @@
           "name_ko": "가든스 바이 더 베이",
           "name_local": "Gardens by the Bay",
           "category": "nature",
+          "area": "마리나베이",
           "one_liner": "슈퍼트리·돔 정원",
           "best_season": [
             "all"
@@ -62,6 +64,7 @@
           "name_ko": "머라이언 파크",
           "name_local": "Merlion Park",
           "category": "culture",
+          "area": "마리나베이",
           "one_liner": "싱가포르 상징 분수상",
           "best_season": [
             "all"
@@ -78,6 +81,7 @@
           "name_ko": "차이나타운",
           "name_local": "Chinatown",
           "category": "food",
+          "area": "차이나타운",
           "one_liner": "사원·호커센터 먹거리",
           "best_season": [
             "all"
@@ -95,6 +99,7 @@
           "name_ko": "부기스 스트리트",
           "name_local": "Bugis Street",
           "category": "shopping",
+          "area": "부기스·캄퐁 글램",
           "one_liner": "야시장·저가 쇼핑거리",
           "best_season": [
             "all"

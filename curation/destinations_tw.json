@@ -226,6 +226,7 @@
           "name_ko": "롄츠탄 (연지담)",
           "name_local": "蓮池潭",
           "category": "culture",
+          "area": "쭤잉(연지담)",
           "one_liner": "용호탑·춘추각 호수",
           "best_season": [
             "all"
@@ -254,6 +255,7 @@
           "name_ko": "시쯔완",
           "name_local": "西子灣",
           "category": "nature",
+          "area": "구산",
           "one_liner": "항구 노을·해변",
           "best_season": [
             "all"
@@ -267,6 +269,7 @@
           "name_ko": "보얼 예술특구",
           "name_local": "駁二藝術特區",
           "category": "culture",
+          "area": "옌청(보얼)",
           "one_liner": "항만 창고 예술구",
           "best_season": [
             "all"
@@ -280,6 +283,7 @@
           "name_ko": "치진섬",
           "name_local": "旗津",
           "category": "nature",
+          "area": "치진",
           "one_liner": "페리로 가는 섬·해산물",
           "best_season": [
             "summer"
@@ -293,6 +297,7 @@
           "name_ko": "리우허 야시장",
           "name_local": "六合夜市",
           "category": "food",
+          "area": "신싱",
           "one_liner": "가오슝 대표 야시장",
           "best_season": [
             "all"

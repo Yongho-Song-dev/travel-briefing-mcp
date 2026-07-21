@@ -54,14 +54,16 @@ def _dwell_hint(spot: dict) -> str:
 
 def _transit_hint(prev: Optional[dict], cur: dict) -> str:
     """
-    - 두 스팟 사이의 대략적 이동 힌트를 만드는 함수
-      정밀 매트릭스 대신 구역(area) 동일 여부로 근사한다 — 같은 구역은 도보,
-      다른 구역은 대중교통. area 가 없는 스팟이면 힌트를 생략(빈 문자열).
+    - 두 스팟 사이의 이동 힌트를 만드는 함수
+      실제 소요는 인접 6분~원거리 50분까지 벌어져 단일 상수가 오히려 위험하고,
+      전 스팟 쌍을 검증할 수도 없다. 그래서 이동시간을 숫자로 단정하지 않고
+      같은 구역이면 도보권, 다른 구역이면 구글맵 경로검색을 유도한다.
+      area 없는 스팟이면 힌트를 생략(빈 문자열).
     ### Args:
       - prev(Optional[dict]): 직전 스팟 (없으면 첫 방문지)
       - cur(dict): 현재 스팟
     ### Returns:
-      - hint(str): 같은 구역/다른 구역의 정성적 이동 안내 또는 판단 불가 시 빈 문자열
+      - hint(str): 이동 안내 문자열 또는 판단 불가 시 빈 문자열
     """
     if not prev:
         return ""
@@ -69,10 +71,8 @@ def _transit_hint(prev: Optional[dict], cur: dict) -> str:
     if not a1 or not a2:
         return ""
     if a1 == a2:
-        minutes = _PLAN_TIMING.get("transit_same_area_min", 10)
-        return f"🚶 {a1} 구역 내 · 도보 약 {minutes}분"
-    minutes = _PLAN_TIMING.get("transit_diff_area_min", 30)
-    return f"🚇 {a1} → {a2} · 대중교통 약 {minutes}분(숙소·환승에 따라 변동)"
+        return f"{a1} 구역 내 도보 이동권"
+    return f"{a1}→{a2} 대중교통(구글맵 경로검색 권장)"
 
 
 # ===========================================================================
@@ -758,102 +758,103 @@ def _cluster_spots_by_area(spots: list[dict]) -> list[dict]:
     return [spot for area in order for spot in groups[area]]
 
 
-def _slot_key(slot: str) -> str:
-    if "오전" in slot:
-        return "morning"
-    if "점심" in slot:
-        return "lunch"
-    if "오후" in slot:
-        return "afternoon"
-    return "evening"
+# 도착일(Day 1)에 넣지 않을 반나절 근교의 체류시간 기준(분). 이보다 오래 걸리면 중간일로.
+_DAY1_MAX_VISIT_MIN = 150
+
+# 시간과 결부된 장소만 시간대를 표기한다(야경·노을·야시장·해돋이). 그 외는 시간 무관.
+_TIME_SUNSET = ("야경", "노을", "일몰", "석양")
+_TIME_NIGHT = ("야시장", "포장마차", "야타이")
+_TIME_MORNING = ("해돋이", "일출")
 
 
-def _pop_food_for_slot(foods: list[dict], slot: str, area: Optional[str]) -> Optional[dict]:
-    """시간대 제약을 지키면서 가능하면 직전 스팟과 같은 구역의 식사 후보를 고른다."""
-    key = _slot_key(slot)
-    ranked: list[tuple[int, int, int]] = []
-    for idx, spot in enumerate(foods):
-        preferred = spot.get("preferred_times") or []
-        if isinstance(preferred, str):
-            preferred = [preferred]
-        if preferred and key not in preferred:
-            continue
-        area_penalty = 0 if area and spot.get("area") == area else 1
-        # 다른 구역 시장을 식사 때문에 억지로 끼우면 첫날부터 도시를 가로지르는 동선이 된다.
-        # 같은 구역 후보가 없으면 현재 권역에서 대표 메뉴를 먹도록 남긴다.
-        if area and area_penalty:
-            continue
-        # 같은 시간대만 가능한 장소(아침시장·야타이)를 범용 후보보다 먼저 소진한다.
-        time_penalty = len(preferred) if preferred else 99
-        ranked.append((area_penalty, time_penalty, idx))
-    if not ranked:
-        return None
-    _, _, idx = min(ranked)
-    return foods.pop(idx)
+def _time_signal(spot: dict) -> tuple[int, str]:
+    """
+    - 장소가 시간과 결부됐는지 판정하는 함수 (해질녘·저녁·이른 아침만 표기)
+      오전/오후 같은 임의 슬롯 대신, 야경·야시장처럼 시간이 실제로 중요한 곳만 안내한다.
+    ### Args:
+      - spot(dict): 큐레이션 스팟
+    ### Returns:
+      - (rank, note): rank 는 하루 내 정렬용(0 아침·1 무관·3 저녁), note 는 표기 문구(없으면 '')
+    """
+    pref = spot.get("preferred_times") or []
+    if isinstance(pref, str):
+        pref = [pref]
+    text = f"{spot.get('one_liner', '')} {spot.get('name_ko', '')}"
+    if any(k in text for k in _TIME_SUNSET):
+        return 3, "해질녘 풍경 추천"
+    if any(k in text for k in _TIME_NIGHT) or ("evening" in pref and "lunch" not in pref):
+        return 3, "저녁 추천"
+    if any(k in text for k in _TIME_MORNING) or ("morning" in pref and "lunch" not in pref):
+        return 0, "이른 아침 추천"
+    return 1, ""
 
 
 def _pop_sight_for_area(
-    sights: list[dict], area: Optional[str], slot: str = "",
+    sights: list[dict], area: Optional[str], max_visit: Optional[int] = None,
 ) -> Optional[dict]:
-    """같은 구역을 우선하되 장시간 장소를 늦은 오후 슬롯에 넣지 않는다."""
+    """
+    - 같은 구역이 있으면 먼저 골라 하루 동선을 뭉치는 함수(없으면 남은 우선순위 순)
+      max_visit 을 주면 그보다 오래 걸리는 반나절 근교(단수이·베이터우 등)는 건너뛴다.
+      도착일(Day 1)은 체크인·비행 여파로 먼 반나절 일정을 넣지 않기 위한 장치.
+    ### Args:
+      - sights(list[dict]): 남은 관광 스팟 (area 순 정렬됨)
+      - area(Optional[str]): 직전 방문 구역. 있으면 같은 구역 우선
+      - max_visit(Optional[int]): 체류시간 상한(분). 초과 스팟은 건너뜀
+    ### Returns:
+      - spot(Optional[dict]): 고른 스팟(목록에서 제거). 후보 없으면 None
+    """
     if not sights:
         return None
-    indices = list(range(len(sights)))
-    if area:
-        indices.sort(key=lambda idx: 0 if sights[idx].get("area") == area else 1)
-    for idx in indices:
-        preferred = sights[idx].get("preferred_times") or []
-        if isinstance(preferred, str):
-            preferred = [preferred]
-        if preferred and _slot_key(slot) not in preferred:
-            continue
-        visit_min = sights[idx].get("visit_min") or _PLAN_TIMING.get("dwell_min", {}).get(
-            sights[idx].get("category"), 0,
-        )
-        if "늦은 오후" in slot and visit_min > 120:
+
+    def _visit(spot: dict) -> int:
+        return int(spot.get("visit_min")
+                   or _PLAN_TIMING.get("dwell_min", {}).get(spot.get("category"), 0))
+
+    order = sorted(
+        range(len(sights)),
+        key=lambda idx: 0 if area and sights[idx].get("area") == area else 1,
+    )
+    for idx in order:
+        if max_visit is not None and _visit(sights[idx]) > max_visit:
             continue
         return sights.pop(idx)
     return None
 
 
-def _next_shopping(sights: list[dict], start: int, area: Optional[str] = None) -> Optional[int]:
-    """
-    - 식사 슬롯을 대신 채울 상점가·번화가 스팟의 위치를 찾는 함수
-      먹거리 스팟이 동났을 때 공원·산책로를 '식사' 로 안내하면 어색하므로,
-      식당이 밀집한 shopping 카테고리만 대체 후보로 삼는다.
-    ### Args:
-      - sights(list[dict]): 남은 관광 스팟 목록
-      - start(int): 아직 배치되지 않은 첫 인덱스
-      - area(Optional[str]): 직전 방문 구역. 있으면 같은 구역 후보만 허용
-    ### Returns:
-      - idx(Optional[int]): 대체 가능한 스팟의 인덱스. 없으면 None
-    """
-    for i in range(start, len(sights)):
-        if sights[i]["category"] == "shopping" and (
-            not area or sights[i].get("area") == area
-        ):
-            return i
-    return None
+def _pop_market(markets: list[dict], area: Optional[str]) -> Optional[dict]:
+    """먹거리 시장·거리를 같은 구역 우선으로 하나 고른다(하루의 저녁 활동 후보)."""
+    if not markets:
+        return None
+    if area:
+        for idx, m in enumerate(markets):
+            if m.get("area") == area:
+                return markets.pop(idx)
+    return markets.pop(0)
 
 
-def _meal_suggestion(
-    country: str, city_key: Optional[str], city_ko: str, meal_index: int,
-) -> str:
-    """도시 대표 음식을 끼니마다 하나씩 순환해 가격대와 함께 반환한다."""
+def _menu_name(city_key: Optional[str], city_ko: str, meal_index: int) -> str:
+    """도시 대표 음식을 끼니마다 하나씩 순환해 메뉴명만 반환한다(시간 비종속)."""
     raw = _CITY_FOOD.get(city_key or "", "")
     choices = [v.strip() for v in re.split(r"[·,]", raw) if v.strip()]
-    menu = choices[meal_index % len(choices)] if choices else f"{city_ko} 지역 대표 음식"
+    return choices[meal_index % len(choices)] if choices else f"{city_ko} 지역 대표 음식"
 
-    # 정적 식비는 3끼 총액이다. 메뉴별 실가격을 가장하지 않고 한 끼의 넓은 참고 범위로 표시한다.
+
+def _menu_from_food_hint(food_hint: str) -> str:
+    """'굴전·루러우판 — 1인 약 120~300 TWD' → '굴전·루러우판' (메뉴명만)."""
+    return food_hint.split(" — ")[0].strip()
+
+
+def _meal_price_note(country: str, city_key: Optional[str]) -> str:
+    """한 끼 1인 참고 가격대. 정적 식비(3끼 총액)를 넓은 범위로만 환산한다."""
     daily_food = _CITY_DAILY_COST.get(city_key or "", {}).get("food")
     if not daily_food:
-        return menu
+        return ""
     midpoint = daily_food / 3
     unit = 1000 if midpoint >= 10000 else (100 if midpoint >= 1000 else 10)
     low = max(unit, round(midpoint * 0.65 / unit) * unit)
     high = max(low + unit, round(midpoint * 1.35 / unit) * unit)
     currency = _STATIC.get(country, {}).get("currency", "")
-    return f"{menu} — 1인 약 {low:,.0f}~{high:,.0f} {currency}"
+    return f"한 끼 1인 약 {low:,.0f}~{high:,.0f} {currency}"
 
 
 def _render_day_plan_md(
@@ -862,9 +863,10 @@ def _render_day_plan_md(
     city_key: Optional[str] = None,
 ) -> list[str]:
     """
-    - 큐레이션 스팟을 '오전·점심·오후·저녁' 시간대에 배치한 일자별 코스를 만드는 함수
-      단순 나열은 LLM 이 살을 붙일 지점을 못 찾는다. 시간대 슬롯을 미리 나눠 두면
-      호스트 LLM 이 각 슬롯에 이동시간·소요시간·식사를 채워 상세 일정으로 확장한다.
+    - 큐레이션 스팟을 Day 별 '할 것(활동) + 추천 식사'로 배치한 일자별 코스를 만드는 함수
+      오전·오후·저녁 슬롯을 라인마다 박으면 '언제'가 '무엇'을 가린다. 시간이 실제로
+      중요한 곳(야경·야시장·해돋이)만 표기하고, 나머지는 방문 순서만 준다. 식사는
+      시간대에 묶지 않고 Day 별 '추천 식사'로 모아 사용자가 끼니를 직접 고르게 한다.
       (개별 식당은 큐레이션하지 않는다 — 폐업 리스크. 시장·먹거리 거리 단위까지만)
     ### Args:
       - city_ko(str): 도시 한글명
@@ -886,15 +888,14 @@ def _render_day_plan_md(
 
     plan  = _PURPOSE_PLAN.get(purpose or "", {})
     days  = nights + 1
-
     per_day = plan.get("sights_per_day", 2)
-    # 첫날·마지막날은 1곳, 중간일은 목적별 밀도만큼 배치한다.
-    sight_slots = 1 + per_day * max(days - 2, 0) + (1 if days >= 2 else 0)
-    want = sight_slots + 2  # 종일 일정 후보와 식사 대체 쇼핑 구역을 위한 여유분
+    # 첫날 2곳(도착일도 할 게 있어야 함)·마지막날 1곳·중간일 목적별 밀도만큼.
+    sight_budget = 2 + (1 if days >= 2 else 0) + per_day * max(days - 2, 0)
+    want = sight_budget + 4  # 종일 일정 후보와 소진 여유분
 
-    # 먹거리(시장·먹거리 거리)는 식사 슬롯에, 나머지는 관광·종일 일정 후보로 분리
+    # 먹거리(시장·먹거리 거리)는 방문지이자 식사처 — 활동으로 배치하고 메뉴는 추천 식사로 뽑는다
     alive  = [s for s in spots if s.get("status") != "under_renovation"]
-    foods  = [s for s in alive if s["category"] == "food" and s.get("meal_slot", True)]
+    markets = [s for s in alive if s["category"] == "food" and s.get("meal_slot", True)]
     picked = _pick_spots_for_purpose(
         [s for s in alive if s["category"] != "food"], purpose, want, mentions,
     )
@@ -902,7 +903,7 @@ def _render_day_plan_md(
     sights = _cluster_spots_by_area(
         [s for s in picked if s.get("trip_scope") != "full_day"]
     )
-    if not sights and not foods:
+    if not sights and not markets and not day_trips:
         return []
 
     # 자동 당일치기는 3박 이상일 때 최대 1회만, 첫날·귀국일이 아닌 Day 2에 배치한다.
@@ -912,6 +913,7 @@ def _render_day_plan_md(
     # 목적×카테고리별 '왜 이 스팟인가' — 지시문은 압축 시 잘리므로 각 라인에 데이터로 심는다
     reasons = _PURPOSE_REASON.get(purpose or "", {})
     mentions = mentions or {}
+    price_note = _meal_price_note(country, city_key)
 
     def _why(spot: dict) -> str:
         parts = []
@@ -923,108 +925,91 @@ def _render_day_plan_md(
             parts.append(f"최근 후기 {n}건 언급")
         return (" · " + " · ".join(parts)) if parts else ""
 
+    def _activity(spot: dict, prev: Optional[dict], lead: str = "") -> str:
+        link = _map_link(country, spot["search_query"])
+        _, tnote = _time_signal(spot)
+        notes = [n for n in (lead, tnote) if n]
+        note_str = (" · " + " · ".join(notes)) if notes else ""
+        meta = []
+        dwell = _dwell_hint(spot)
+        if dwell:
+            meta.append(dwell)
+        transit = _transit_hint(prev, spot)
+        if transit:
+            meta.append(transit)
+        meta_str = f" ({', '.join(meta)})" if meta else ""
+        return (f"- [{spot['name_ko']}]({link}) — "
+                f"{spot['one_liner']}{_why(spot)}{note_str}{meta_str}")
+
+    meal_index = [0]
+
+    def _meal_line(count: int, explicit: Optional[str] = None) -> str:
+        # 시장 먹거리는 활동으로 이미 나가므로, 식사는 도시 대표 음식만 끼니별로 순환한다.
+        menus: list[str] = [explicit] if explicit else []
+        while len(menus) < count:
+            m = _menu_name(city_key, city_ko, meal_index[0])
+            meal_index[0] += 1
+            if m not in menus:
+                menus.append(m)
+        suffix = f" ({price_note})" if price_note else ""
+        return f"- 추천 식사: {' · '.join(menus)}{suffix}"
+
     purpose_ko = _PURPOSE_KO.get(purpose, "") if purpose else ""
     head = f"## 🗓 {nights}박{days}일 코스 제안 ({city_ko}"
     head += f" · {purpose_ko})" if purpose_ko else ")"
     lines = [head]
-    # 코스 설계 이유를 첫 줄에 데이터로 명시 (왜 이렇게 짰는지)
     note = plan.get("note", "")
     design = f"{purpose_ko} 기준 — {note}" if purpose_ko and note else (note or "")
     if design:
         lines.append(f"**코스 설계**: {design}. 도착일·귀국일은 비행을 감안해 가볍게 배치했어요.")
 
-    meal_index = 0
     for day in range(days):
         first, last = day == 0, day == days - 1
         label = "도착 · 시내 적응" if first else ("여유롭게 마무리 · 귀국" if last else "핵심 관광")
-        lines.append(f"**Day {day + 1}** — {label}")
+        lines.append(f"**Day {day + 1} · {label}**")
 
         if day == day_trip_day and day_trip:
-            dwell = _dwell_hint(day_trip)
-            dwell_str = f" · {dwell} 소요" if dwell else ""
-            link = _map_link(country, day_trip["search_query"])
-            lines.append(
-                f"- 🌄 하루 종일 · [{day_trip['name_ko']}]({link}) — "
-                f"{day_trip['one_liner']}{_why(day_trip)}{dwell_str}"
-            )
-            meal = day_trip.get("food_hint") or _meal_suggestion(
-                country, city_key, city_ko, meal_index,
-            )
-            meal_index += 1
-            lines.append(f"- 🍽 점심 · {day_trip.get('area', city_ko)}에서 **{meal}**")
+            lines.append(_activity(day_trip, None, lead="하루 종일"))
+            explicit = _menu_from_food_hint(day_trip["food_hint"]) if day_trip.get("food_hint") else None
+            lines.append(_meal_line(1, explicit))
             lines.append("")
             continue
 
-        # 첫날은 오후부터, 마지막 날은 오전까지 (비행 시간 감안)
-        slots = ["🌅 오전", "🍽 점심", "☀️ 오후"]
-        if per_day >= 3:
-            slots.append("🌆 늦은 오후")
-        slots.append("🌙 저녁")
-        if first:
-            slots = ["☀️ 오후", "🌙 저녁"]
-        elif last:
-            slots = ["🌅 오전", "🍽 점심"]
+        n_sights = 2 if first else (1 if last else per_day)
+        n_meals = 1 if last else 2
+        # 도착일은 체크인·비행 여파로 먼 반나절 근교를 넣지 않는다(가까운 곳부터).
+        max_visit = _DAY1_MAX_VISIT_MIN if first else None
 
-        prev_spot: Optional[dict] = None    # 하루 시작은 숙소 출발이라 이동힌트 없음
-        daily_sight_minutes = 0
-        for slot in slots:
-            is_meal = "점심" in slot or "저녁" in slot
-            spot: Optional[dict] = None
-            suffix = ""
-            meal = ""
-            if is_meal:
-                meal = _meal_suggestion(country, city_key, city_ko, meal_index)
-                meal_index += 1
-                spot = _pop_food_for_slot(
-                    foods, slot, prev_spot.get("area") if prev_spot else None,
-                )
-            if is_meal and spot is None:
-                nxt = _next_shopping(
-                    sights, 0, prev_spot.get("area") if prev_spot else None,
-                )
-                if nxt is not None:
-                    spot = sights.pop(nxt)
-                    suffix = " 일대에서 식사"  # 상점가 (식당 밀집)
-            if is_meal and spot is None:
-                # 폐업 위험이 큰 가게명을 임의 생성하지 않고, 현재 동선의 구역+대표 메뉴를 구체화한다.
-                area = prev_spot.get("area") if prev_spot else city_ko
-                lines.append(f"- {slot} · {area}에서 **{meal}**")
-                continue
-            if not is_meal and sights and not (
-                "늦은 오후" in slot and daily_sight_minutes >= 300
-            ):
-                spot = _pop_sight_for_area(
-                    sights, prev_spot.get("area") if prev_spot else None, slot,
-                )
-            if not is_meal and spot is None:
-                area = prev_spot.get("area") if prev_spot else city_ko
-                lines.append(
-                    f"- {slot} · {area} 여유 일정 — 카페 휴식 후 주변 상권 산책·기념품 쇼핑 · 약 1시간 30분"
-                )
-                continue
+        # 하루치 활동 수집: 관광 스팟 + (마지막날 제외) 먹거리 시장 1곳
+        day_spots: list[dict] = []
+        prev_area: Optional[str] = None
+        for _ in range(n_sights):
+            spot = _pop_sight_for_area(sights, prev_area, max_visit)
+            if spot is None:
+                break
+            day_spots.append(spot)
+            prev_area = spot.get("area")
+        if not last:
+            market = _pop_market(markets, prev_area)
+            if market:
+                day_spots.append(market)
 
-            # 직전 방문지와의 대략 이동시간 (구역 기반, 데이터 있을 때만)
-            transit = _transit_hint(prev_spot, spot)
-            if transit:
-                lines.append(f"  ↳ {transit}")
-            dwell = _dwell_hint(spot)
-            dwell_str = f" · {dwell} 소요" if dwell else ""
-            if not is_meal:
-                daily_sight_minutes += int(
-                    spot.get("visit_min")
-                    or _PLAN_TIMING.get("dwell_min", {}).get(spot.get("category"), 0)
-                )
-            link = _map_link(country, spot["search_query"])
-            if is_meal and spot.get("food_hint"):
-                meal = spot["food_hint"]
-            meal_str = f" · 추천 메뉴: **{meal}**" if is_meal else ""
-            lines.append(f"- {slot} · [{spot['name_ko']}]({link}) — {spot['one_liner']}{suffix}{meal_str}{_why(spot)}{dwell_str}")
+        # 시간과 결부된 곳(야시장 등)은 하루의 끝, 아침시장은 앞으로 (그 외 순서 유지)
+        day_spots.sort(key=lambda s: _time_signal(s)[0])
+
+        if not day_spots:
+            lines.append(
+                f"- {city_ko} 여유 일정 — 카페 휴식 후 주변 상권 산책·기념품 쇼핑 (약 1시간 30분)"
+            )
+        prev_spot: Optional[dict] = None
+        for spot in day_spots:
+            lines.append(_activity(spot, prev_spot))
             prev_spot = spot
+        lines.append(_meal_line(n_meals))
         lines.append("")
 
-    # 호스트 LLM 에게 시키는 지시문을 두면, 작은 모델이 못 따라갈 때 미완성 문장이 그대로 노출되고
-    # 수행하는 과정에서 링크·경고를 지운다 (QA v2 P1-4) → 사용자용 문장으로만 마무리한다.
-    lines.append("> 체류·이동 시간은 대략치이며, 숙소 위치에 따라 순서를 바꿔도 무리 없는 동선입니다.")
+    lines.append("> 체류·이동 시간은 여유 있게 잡은 추정치입니다. 실제 경로·소요는 구글맵 "
+                 "경로검색으로 확인하고, 표시된 시간보다 10~20분 여유를 두세요.")
     lines.append("")
     return lines
 
@@ -1338,31 +1323,29 @@ def _render_priority_summary_md(
     days: list[dict[str, object]] = []
     current: Optional[dict[str, object]] = None
     for line in day_plan_lines:
-        day_match = re.match(r"\*\*Day (\d+)\*\*", line)
+        day_match = re.match(r"\*\*Day (\d+)", line)
         if day_match:
-            current = {"number": day_match.group(1), "spots": [], "meals": []}
+            current = {"number": day_match.group(1), "spots": [], "meals": [], "price": ""}
             days.append(current)
             continue
         if not current or not line.startswith("- "):
             continue
 
-        is_meal = "점심" in line or "저녁" in line
-        if is_meal:
-            bold = re.findall(r"\*\*([^*]+)\*\*", line)
-            linked = re.search(r"\[([^\]]+)\]\(", line)
-            meal = bold[-1] if bold else (linked.group(1) if linked else "")
-            if meal and meal not in current["meals"]:
-                current["meals"].append(meal)
+        if line.startswith("- 추천 식사:"):
+            body = line.split("추천 식사:", 1)[1]
+            price = re.search(r"\(([^)]*1인[^)]*)\)", body)
+            if price:
+                current["price"] = price.group(1)
+                body = body[: body.rfind("(")]
+            for m in body.split("·"):
+                m = m.strip()
+                if m and m not in current["meals"]:
+                    current["meals"].append(m)
             continue
 
-        linked = re.search(r"\[([^\]]+)\]\(", line)
-        if linked:
-            spot = linked.group(1)
-        else:
-            fallback = re.search(r"·\s*(.+?)(?:\s+—|$)", line)
-            spot = fallback.group(1) if fallback else ""
-        if spot and spot not in current["spots"]:
-            current["spots"].append(spot)
+        linked = re.search(r"\[([^\]]+)\]\(", line)  # 활동만 집계, 여유 일정 줄은 링크가 없어 제외
+        if linked and linked.group(1) not in current["spots"]:
+            current["spots"].append(linked.group(1))
 
     for day in days:
         spots = day["spots"][:3]
@@ -1371,7 +1354,10 @@ def _render_priority_summary_md(
         if spots:
             parts.append(" · ".join(spots))
         if meals:
-            parts.append("식사 " + " / ".join(meals))
+            meal_part = "식사 " + " / ".join(meals)
+            if day["price"]:
+                meal_part += f" — {day['price']}"
+            parts.append(meal_part)
         if parts:
             lines.append(f"- **Day {day['number']}**: " + " | ".join(parts))
 

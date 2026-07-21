@@ -96,9 +96,7 @@
     }
   },
   "plan_timing": {
-    "dwell_min": {"culture": 90, "food": 60, "nature": 60, "shopping": 90, "onsen": 120},
-    "transit_same_area_min": 10,
-    "transit_diff_area_min": 30
+    "dwell_min": {"culture": 90, "food": 60, "nature": 60, "shopping": 90, "onsen": 120}
   },
   "domestic_keywords": [
     "제주", "제주도", "부산", "강릉", "속초", "경주", "전주", "여수", "통영",

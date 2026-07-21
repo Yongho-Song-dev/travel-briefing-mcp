@@ -11,6 +11,7 @@
           "name_ko": "자금성 (고궁)",
           "name_local": "故宫",
           "category": "culture",
+          "area": "톈안먼",
           "one_liner": "명·청 황궁, 세계 최대 궁궐",
           "best_season": [
             "spring",
@@ -49,6 +50,7 @@
           "name_ko": "천안문 광장",
           "name_local": "天安门广场",
           "category": "culture",
+          "area": "톈안먼",
           "one_liner": "세계 최대 도심 광장",
           "best_season": [
             "all"
@@ -62,6 +64,7 @@
           "name_ko": "이화원",
           "name_local": "颐和园",
           "category": "nature",
+          "area": "하이뎬(이화원)",
           "one_liner": "황실 정원과 쿤밍호",
           "best_season": [
             "spring",
@@ -76,6 +79,7 @@
           "name_ko": "천단공원",
           "name_local": "天坛",
           "category": "culture",
+          "area": "톈탄",
           "one_liner": "명·청 제천단, 원형 기년전",
           "best_season": [
             "all"
@@ -89,6 +93,7 @@
           "name_ko": "왕푸징 거리",
           "name_local": "王府井",
           "category": "food",
+          "area": "왕푸징",
           "one_liner": "중심 상업거리·먹거리",
           "best_season": [
             "all"
@@ -140,6 +145,7 @@
           "name_ko": "와이탄 (외탄)",
           "name_local": "外滩",
           "category": "culture",
+          "area": "와이탄",
           "one_liner": "황푸강변 만국건축·야경",
           "best_season": [
             "all"
@@ -157,6 +163,7 @@
           "name_ko": "동방명주",
           "name_local": "东方明珠",
           "category": "culture",
+          "area": "루자쭈이(푸둥)",
           "one_liner": "468m 방송탑·전망대",
           "best_season": [
             "all"
@@ -173,6 +180,7 @@
           "name_ko": "예원",
           "name_local": "豫园",
           "category": "culture",
+          "area": "위위안",
           "one_liner": "명대 강남 정원",
           "best_season": [
             "spring",
@@ -207,6 +215,7 @@
           "name_ko": "티엔즈팡",
           "name_local": "田子坊",
           "category": "shopping",
+          "area": "톈쯔팡",
           "one_liner": "골목 예술·공방 거리",
           "best_season": [
             "all"
@@ -220,6 +229,7 @@
           "name_ko": "난징루",
           "name_local": "南京路",
           "category": "food",
+          "area": "와이탄",
           "one_liner": "보행자 상업거리·먹거리",
           "best_season": [
             "all"

@@ -11,6 +11,7 @@
           "name_ko": "따나롯 사원",
           "name_local": "Tanah Lot",
           "category": "culture",
+          "area": "따나롯",
           "one_liner": "바다 위 사원, 노을 명소",
           "best_season": [
             "summer"
@@ -27,6 +28,7 @@
           "name_ko": "울루와뚜 사원",
           "name_local": "Uluwatu",
           "category": "culture",
+          "area": "울루와뚜",
           "one_liner": "절벽 사원·케착 댄스",
           "best_season": [
             "summer"
@@ -43,6 +45,7 @@
           "name_ko": "뜨갈랄랑 라이스테라스",
           "name_local": "Tegalalang",
           "category": "nature",
+          "area": "뜨갈랄랑",
           "one_liner": "우붓 계단식 논 풍경",
           "best_season": [
             "all"
@@ -60,6 +63,7 @@
           "name_ko": "우붓 원숭이 숲",
           "name_local": "Sacred Monkey Forest",
           "category": "nature",
+          "area": "우붓 중심",
           "one_liner": "신성한 원숭이 자연보호구",
           "best_season": [
             "all"
@@ -77,6 +81,7 @@
           "name_ko": "꾸따 비치",
           "name_local": "Kuta Beach",
           "category": "nature",
+          "area": "꾸따",
           "one_liner": "서핑·노을 해변",
           "best_season": [
             "summer"
@@ -93,6 +98,7 @@
           "name_ko": "우붓 전통시장",
           "name_local": "Ubud Market",
           "category": "food",
+          "area": "우붓 중심",
           "one_liner": "공예품·먹거리 재래시장",
           "best_season": [
             "all"
