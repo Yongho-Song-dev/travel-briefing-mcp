@@ -7,17 +7,18 @@
   },
   "ttl_seconds": {
     "mofa_visa":     46800,
-    "mofa_warning":   3600,
+    "mofa_warning":  46800,
     "koreaexim":     86400,
     "naver_blog":    25200,
     "external_json": 86400,
     "negative":         60
   },
   "http_timeout_seconds": 2.0,
+  "warm_timeout_seconds": 12.0,
   "naver_blog_display": 10,
   "warm_schedule": {
     "koreaexim":  [0, 6, 10, 12, 14, 18, 20],
-    "mofa":       [6, 18],
+    "mofa":       [6, 12, 18],
     "naver_blog": [0, 6, 12, 18]
   },
   "naver_warm": {

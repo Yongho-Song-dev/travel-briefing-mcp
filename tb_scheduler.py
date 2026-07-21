@@ -20,7 +20,7 @@ import os
 from tb_config import (
     logger, SupportedCountry, today_kst,
     _API_CFG, _WARM_SCHEDULE, _QUERY_VOCAB, city_meta, _STATIC,
-    _NAVER_BLOG_DISPLAY,
+    _NAVER_BLOG_DISPLAY, _WARM_TIMEOUT_S,
 )
 from tb_api import (
     _refresh_mofa_visa_all, _refresh_mofa_warn_all,
@@ -68,15 +68,17 @@ def _warm_exchange_once() -> None:
 
 def _warm_mofa_once() -> None:
     """
-    - 비자·여행경보 전국가 목록을 강제 갱신하는 워밍 함수 (06/18시 실행)
-      비자는 TTL 13h 라 다음 워밍까지 유지, 경보는 TTL 1h 로 온디맨드 갱신 병행.
+    - 비자·여행경보 전국가 목록을 강제 갱신하는 워밍 함수 (06/12/18시 실행)
+      둘 다 TTL 13h — 워밍 간격(≤12h)을 넘겨 하루 종일 캐시가 살아 있다.
+      경보 목록은 응답이 ~4s 라 워밍 전용 넉넉한 타임아웃으로 받는다.
     ### Args:
       - None
     ### Returns:
       - None (실패 시 네거티브 캐시 후 다음 스케줄에 재시도)
     """
-    visa = _refresh_mofa_visa_all()
-    warn = _refresh_mofa_warn_all()
+    # 워밍은 백그라운드라 사용자용 짧은 타임아웃 대신 넉넉한 값으로 — 경보 목록(~4s)을 받아낸다.
+    visa = _refresh_mofa_visa_all(timeout=_WARM_TIMEOUT_S)
+    warn = _refresh_mofa_warn_all(timeout=_WARM_TIMEOUT_S)
     logger.info("MOFA 워밍: 비자 %s / 경보 %s",
                 "OK" if visa else "실패", "OK" if warn else "실패")
 

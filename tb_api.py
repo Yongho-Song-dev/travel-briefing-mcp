@@ -239,12 +239,13 @@ def get_destinations_json(country: str = "JP") -> dict:
 _MOFA_VISA_ALL_KEY = "mofa_visa_all"  # 전국가 비자 목록 캐시 키
 
 
-def _refresh_mofa_visa_all() -> Optional[dict]:
+def _refresh_mofa_visa_all(timeout: Optional[float] = None) -> Optional[dict]:
     """
     - 전국가 비자 목록을 API 에서 강제 조회해 캐시에 저장하는 함수
       (스케줄 워밍과 콜드 미스 양쪽에서 공용. 캐시 유무와 무관하게 항상 호출)
     ### Args:
-      - None
+      - timeout(Optional[float]): 요청 타임아웃(초). 워밍은 백그라운드라 넉넉히,
+                                  온디맨드 콜드 미스는 기본(p99 대응 짧은 값)을 쓴다.
     ### Returns:
       - all_items(Optional[dict]): {iso2: item} 또는 실패 시 None (실패는 60s 네거티브 캐시)
     """
@@ -255,6 +256,7 @@ def _refresh_mofa_visa_all() -> Optional[dict]:
         resp = _http.get(
             _MOFA_VISA_URL,
             params={"serviceKey": api_key, "returnType": "JSON", "numOfRows": "300", "pageNo": "1"},
+            timeout=timeout or _HTTP_TIMEOUT_S,
         )
         resp.raise_for_status()
         raw = resp.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])
@@ -368,12 +370,14 @@ def _fetch_mofa_warn_all() -> Optional[dict]:
     return _refresh_mofa_warn_all()
 
 
-def _refresh_mofa_warn_all() -> Optional[dict]:
+def _refresh_mofa_warn_all(timeout: Optional[float] = None) -> Optional[dict]:
     """
     - 전국가 여행경보 목록을 API 에서 강제 조회해 캐시에 저장하는 함수
       (스케줄 워밍과 콜드 미스 양쪽에서 공용)
+      경보 목록(250건)은 응답이 ~4s 라, 사용자용 짧은 타임아웃으로는 워밍이 매번
+      실패한다. 워밍은 넉넉한 타임아웃을 주입해 캐시를 채운다(온디맨드는 캐시 히트).
     ### Args:
-      - None
+      - timeout(Optional[float]): 요청 타임아웃(초). 워밍은 넉넉히, 온디맨드는 기본값.
     ### Returns:
       - by_iso(Optional[dict]): {iso3: item} 또는 실패 시 None (실패는 60s 네거티브 캐시)
     """
@@ -384,6 +388,7 @@ def _refresh_mofa_warn_all() -> Optional[dict]:
         resp = _http.get(
             _MOFA_WARN_URL,
             params={"serviceKey": api_key, "returnType": "JSON", "numOfRows": "250", "pageNo": "1"},
+            timeout=timeout or _HTTP_TIMEOUT_S,
         )
         resp.raise_for_status()
         items = resp.json().get("response", {}).get("body", {}).get("items", {}).get("item", [])

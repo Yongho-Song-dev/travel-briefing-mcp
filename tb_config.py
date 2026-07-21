@@ -112,12 +112,16 @@ _NAVER_BLOG_URL = _EP.get("naver_blog",   "https://openapi.naver.com/v1/search/b
 # --- HTTP·TTL (config/api.json 의 ttl_seconds 에서 관리) ---
 _TTL            = _API_CFG.get("ttl_seconds", {})
 _HTTP_TIMEOUT_S = _API_CFG.get("http_timeout_seconds", 2.0)
+# 워밍은 사용자 p99 경로가 아닌 백그라운드 — MOFA 경보 목록(250건)이 ~4s 라 짧은
+# 사용자용 타임아웃(2s)으로는 못 받는다. 워밍 전용 넉넉한 타임아웃을 따로 둔다.
+_WARM_TIMEOUT_S = _API_CFG.get("warm_timeout_seconds", 12.0)
 _NAVER_BLOG_DISPLAY = int(_API_CFG.get("naver_blog_display", 10))
 _NEGATIVE_TTL_S = _TTL.get("negative", 60)  # 실패 상태 캐시 — 연속 타임아웃으로 인한 p99 위반 방지
 
-# 비자는 06/18시 워밍 + 13h 유지 (다음 워밍까지 재호출 없음), 경보는 1h 온디맨드 병행
+# 비자·경보 모두 06/12/18시 워밍 + 13h 유지 — 워밍 간격(≤12h)을 넘겨 하루 종일 캐시가
+# 살아 있게 한다. 온디맨드는 캐시 히트(빠름), 콜드 미스만 짧은 타임아웃으로 ⚪ 폴백.
 _MOFA_VISA_TTL_S     = _TTL.get("mofa_visa",     46800)
-_MOFA_ALERT_TTL_S    = _TTL.get("mofa_warning",  3600)
+_MOFA_ALERT_TTL_S    = _TTL.get("mofa_warning", 46800)
 _EXCHANGE_TTL_S      = _TTL.get("koreaexim",     86400)
 # 7h — 6h 간격 워밍이 만료 직전에 갱신하도록 1h 여유
 _NAVER_BLOG_TTL_S    = _TTL.get("naver_blog",    25200)
