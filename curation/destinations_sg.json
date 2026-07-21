@@ -1,7 +1,7 @@
 {
   "country": "SG",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "singapore": {
       "name_ko": "싱가포르",
@@ -54,7 +54,9 @@
           "search_query": "센토사 싱가포르",
           "aliases": [
             "센토사"
-          ]
+          ],
+          "trip_scope": "full_day", "visit_min": 540,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "센토사"
         },
         {
           "name_ko": "머라이언 파크",
@@ -101,6 +103,34 @@
           "status": "active",
           "verified_date": "2026-07-15",
           "search_query": "부기스 스트리트"
+        },
+        {
+          "name_ko": "싱가포르 보타닉 가든", "name_local": "Singapore Botanic Gardens",
+          "category": "nature", "one_liner": "유네스코 세계유산 열대 정원과 국립난초정원",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "싱가포르 보타닉 가든",
+          "visit_min": 180, "area": "탕린"
+        },
+        {
+          "name_ko": "캄퐁 글램·하지 레인", "name_local": "Kampong Gelam・Haji Lane",
+          "category": "culture", "one_liner": "술탄 모스크와 벽화·부티크 골목을 잇는 문화지구",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "캄퐁 글램 하지 레인 싱가포르",
+          "visit_min": 150, "area": "부기스·캄퐁 글램"
+        },
+        {
+          "name_ko": "내셔널 갤러리 싱가포르", "name_local": "National Gallery Singapore",
+          "category": "culture", "one_liner": "옛 시청·대법원 건물에서 보는 동남아 현대미술",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "내셔널 갤러리 싱가포르",
+          "visit_min": 180, "area": "시빅 디스트릭트"
+        },
+        {
+          "name_ko": "주얼 창이", "name_local": "Jewel Changi Airport",
+          "category": "shopping", "one_liner": "실내 폭포와 정원·쇼핑몰이 결합된 공항 복합공간",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "주얼 창이 싱가포르",
+          "visit_min": 180, "area": "창이"
         }
       ]
     }

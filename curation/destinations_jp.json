@@ -1,7 +1,7 @@
 {
   "country": "JP",
   "schema_version": 1,
-  "last_reviewed": "2026-06-28",
+  "last_reviewed": "2026-07-21",
   "note": "관광지 정보는 상황에 따라 변경될 수 있음. 방문 전 공식 사이트에서 운영 여부 재확인 권장.",
   "cities": {
     "tokyo": {
@@ -91,6 +91,7 @@
             "morning",
             "lunch"
           ],
+          "food_hint": "에도마에 스시·해산물덮밥·달걀말이 — 1인 약 2,000~5,000 JPY",
           "area": "츠키지·긴자"
         },
         {
@@ -109,6 +110,7 @@
             "lunch",
             "evening"
           ],
+          "food_hint": "돈부리·야키토리·시장 간식 — 1인 약 1,000~2,500 JPY",
           "area": "우에노"
         },
         {
@@ -126,6 +128,7 @@
           "preferred_times": [
             "evening"
           ],
+          "food_hint": "야키토리·모츠야키 — 1인 약 2,500~4,500 JPY",
           "area": "신주쿠"
         },
         {

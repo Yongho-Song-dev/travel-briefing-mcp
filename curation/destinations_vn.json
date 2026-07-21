@@ -1,7 +1,7 @@
 {
   "country": "VN",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "danang": {
       "name_ko": "다낭",
@@ -105,6 +105,43 @@
           "aliases": [
             "용다리"
           ]
+        },
+        {
+          "name_ko": "선짜반도·링응사",
+          "name_local": "Bán đảo Sơn Trà・Chùa Linh Ứng",
+          "category": "nature",
+          "one_liner": "해안 전망과 67m 관음상이 있는 자연보호구역",
+          "best_season": ["spring", "summer", "autumn"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "선짜반도 링응사 다낭", "visit_min": 180, "area": "선짜"
+        },
+        {
+          "name_ko": "참 조각 박물관",
+          "name_local": "Bảo tàng Điêu khắc Chăm Đà Nẵng",
+          "category": "culture",
+          "one_liner": "세계 최대 규모의 참파 조각 컬렉션",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "참 조각 박물관 다낭", "visit_min": 90, "area": "한강 서안"
+        },
+        {
+          "name_ko": "하이반 패스 (근교 드라이브)",
+          "name_local": "Đèo Hải Vân",
+          "category": "nature",
+          "one_liner": "바다와 산을 조망하는 21km 해안 산악도로",
+          "best_season": ["spring", "summer", "autumn"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "하이반 패스 다낭", "trip_scope": "full_day", "visit_min": 360,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "하이반(근교)"
+        },
+        {
+          "name_ko": "박당 거리·한강 산책로",
+          "name_local": "Đường Bạch Đằng・Sông Hàn",
+          "category": "shopping",
+          "one_liner": "카페와 야경을 함께 즐기는 한강변 중심 산책로",
+          "best_season": ["all"],
+          "stability": "popular", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "박당 거리 한강 다낭", "visit_min": 120, "area": "한강 서안"
         }
       ]
     },
@@ -200,6 +237,43 @@
             "morning",
             "lunch"
           ]
+        },
+        {
+          "name_ko": "롱선사",
+          "name_local": "Chùa Long Sơn",
+          "category": "culture",
+          "one_liner": "언덕 위 24m 백색 불상으로 유명한 불교 사원",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "롱선사 나트랑", "visit_min": 90, "area": "도심 북부"
+        },
+        {
+          "name_ko": "베트남 국립해양박물관",
+          "name_local": "Bảo tàng Hải dương học Việt Nam",
+          "category": "culture",
+          "one_liner": "해양 표본과 19m 혹등고래 골격을 전시하는 연구 박물관",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "국립해양박물관 나트랑", "visit_min": 120, "area": "꺼우다"
+        },
+        {
+          "name_ko": "혼총 곶",
+          "name_local": "Hòn Chồng",
+          "category": "nature",
+          "one_liner": "기암과 바다 전망이 어우러진 해안 포토 스폿",
+          "best_season": ["spring", "summer", "autumn"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "혼총 곶 나트랑", "visit_min": 90, "area": "혼총"
+        },
+        {
+          "name_ko": "나트랑만 섬 호핑 (당일치기)",
+          "name_local": "Nha Trang Bay Island Hopping",
+          "category": "nature",
+          "one_liner": "혼문 등 섬과 산호 해역을 둘러보는 보트 투어",
+          "best_season": ["spring", "summer"],
+          "stability": "popular", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "나트랑만 섬 호핑", "trip_scope": "full_day", "visit_min": 420,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "나트랑만(근교)"
         }
       ]
     }

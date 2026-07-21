@@ -1,7 +1,7 @@
 {
   "country": "MY",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "kualalumpur": {
       "name_ko": "쿠알라룸푸르",
@@ -99,6 +99,35 @@
           "preferred_times": [
             "lunch"
           ]
+        },
+        {
+          "name_ko": "말레이시아 이슬람 예술 박물관", "name_local": "Islamic Arts Museum Malaysia",
+          "category": "culture", "one_liner": "이슬람권 공예·직물·건축 모형을 소장한 대표 박물관",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "이슬람 예술 박물관 쿠알라룸푸르",
+          "visit_min": 180, "area": "페르다나"
+        },
+        {
+          "name_ko": "페르다나 보타닉 가든", "name_local": "Perdana Botanical Gardens",
+          "category": "nature", "one_liner": "호수·열대 식물·산책로가 있는 도심 대형 정원",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "페르다나 보타닉 가든 쿠알라룸푸르",
+          "visit_min": 150, "area": "페르다나"
+        },
+        {
+          "name_ko": "천후궁", "name_local": "Thean Hou Temple",
+          "category": "culture", "one_liner": "도심 전망과 화려한 중국계 사원 건축을 함께 보는 명소",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "천후궁 쿠알라룸푸르",
+          "visit_min": 90, "area": "로브슨 힐"
+        },
+        {
+          "name_ko": "푸트라자야 (당일치기)", "name_local": "Putrajaya",
+          "category": "culture", "one_liner": "푸트라 모스크·정부청사·호수를 둘러보는 계획도시 코스",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "푸트라자야 말레이시아",
+          "trip_scope": "full_day", "visit_min": 420,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "푸트라자야(근교)"
         }
       ]
     }

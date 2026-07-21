@@ -1,7 +1,7 @@
 {
   "country": "TW",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "taipei": {
       "name_ko": "타이베이",
@@ -19,6 +19,7 @@
           "status": "active",
           "verified_date": "2026-07-15",
           "search_query": "타이베이 101",
+          "area": "신이",
           "aliases": [
             "101타워",
             "타이베이101"
@@ -36,6 +37,7 @@
           "status": "active",
           "verified_date": "2026-07-15",
           "search_query": "국립고궁박물원 타이베이",
+          "area": "스린",
           "aliases": [
             "고궁박물원"
           ]
@@ -51,7 +53,101 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "지우펀"
+          "search_query": "지우펀",
+          "trip_scope": "full_day",
+          "visit_min": 360,
+          "avoid_first_day": true,
+          "avoid_last_day": true,
+          "area": "지우펀(근교)",
+          "food_hint": "타로완자·어묵탕 — 1인 약 150~300 TWD"
+        },
+        {
+          "name_ko": "중정기념당",
+          "name_local": "中正紀念堂",
+          "category": "culture",
+          "one_liner": "대형 광장과 기념관·국가극장이 어우러진 대표 명소",
+          "best_season": ["all"],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "중정기념당 타이베이",
+          "area": "중정"
+        },
+        {
+          "name_ko": "화산1914 문화창의산업원구",
+          "name_local": "華山1914文化創意產業園區",
+          "category": "culture",
+          "one_liner": "옛 양조장을 개조한 전시·디자인·카페 복합문화공간",
+          "best_season": ["all"],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "화산1914 문화창의산업원구",
+          "area": "중정"
+        },
+        {
+          "name_ko": "디화제·다다오청",
+          "name_local": "迪化街・大稻埕",
+          "category": "shopping",
+          "one_liner": "찻집·건어물·옛 상점과 강변 노을을 함께 즐기는 거리",
+          "best_season": ["all"],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "디화제 다다오청 타이베이",
+          "area": "다퉁"
+        },
+        {
+          "name_ko": "베이터우 온천박물관·지열곡",
+          "name_local": "北投溫泉博物館・地熱谷",
+          "category": "onsen",
+          "one_liner": "온천 역사와 유황 계곡을 둘러보는 반나절 휴식 코스",
+          "best_season": ["all"],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "베이터우 온천박물관 지열곡",
+          "visit_min": 180,
+          "area": "베이터우"
+        },
+        {
+          "name_ko": "단수이 옛거리·연인의 다리",
+          "name_local": "淡水老街・情人橋",
+          "category": "nature",
+          "one_liner": "강변 산책과 노을을 즐기기 좋은 커플 반나절 코스",
+          "best_season": ["all"],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "단수이 옛거리 연인의 다리",
+          "visit_min": 240,
+          "preferred_times": ["afternoon"],
+          "area": "단수이"
+        },
+        {
+          "name_ko": "샹산 전망대",
+          "name_local": "象山觀景台",
+          "category": "nature",
+          "one_liner": "타이베이 101과 도심 전망을 마주 보는 짧은 등산 코스",
+          "best_season": ["all"],
+          "stability": "landmark",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "샹산 전망대 타이베이",
+          "visit_min": 120,
+          "area": "신이"
+        },
+        {
+          "name_ko": "송산문창원구",
+          "name_local": "松山文創園區",
+          "category": "culture",
+          "one_liner": "전시·디자인숍·카페가 모인 옛 담배공장 문화공간",
+          "best_season": ["all"],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "송산문창원구 타이베이",
+          "area": "신이"
         },
         {
           "name_ko": "스린 야시장",
@@ -65,9 +161,11 @@
           "status": "active",
           "verified_date": "2026-07-15",
           "search_query": "스린야시장 타이베이",
+          "area": "스린",
           "preferred_times": [
             "evening"
           ],
+          "food_hint": "지파이·후추빵·대만식 소시지 — 1인 약 150~350 TWD",
           "aliases": [
             "스린야시장",
             "스린 나이트마켓"
@@ -85,6 +183,7 @@
           "status": "active",
           "verified_date": "2026-07-15",
           "search_query": "룽산사 타이베이",
+          "area": "완화·시먼딩",
           "aliases": [
             "용산사"
           ]
@@ -100,7 +199,22 @@
           "stability": "popular",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "시먼딩 타이베이"
+          "search_query": "시먼딩 타이베이",
+          "area": "완화·시먼딩"
+        },
+        {
+          "name_ko": "닝샤 야시장",
+          "name_local": "寧夏夜市",
+          "category": "food",
+          "one_liner": "대만식 굴전·루러우판 등 먹거리에 집중하기 좋은 야시장",
+          "best_season": ["all"],
+          "stability": "popular",
+          "status": "active",
+          "verified_date": "2026-07-21",
+          "search_query": "닝샤 야시장 타이베이",
+          "preferred_times": ["evening"],
+          "food_hint": "굴전·루러우판 — 1인 약 120~300 TWD",
+          "area": "다퉁"
         }
       ]
     },
@@ -132,7 +246,9 @@
           "stability": "landmark",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "포광산 불타기념관"
+          "search_query": "포광산 불타기념관",
+          "trip_scope": "full_day", "visit_min": 360,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "다수·포광산(근교)"
         },
         {
           "name_ko": "시쯔완",
@@ -191,6 +307,43 @@
           "aliases": [
             "리우허야시장"
           ]
+        },
+        {
+          "name_ko": "사랑의 강·러브리버",
+          "name_local": "愛河",
+          "category": "nature",
+          "one_liner": "강변 산책과 야간 조명이 어우러진 가오슝 대표 수변 공간",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "사랑의 강 가오슝", "visit_min": 120, "area": "아이허"
+        },
+        {
+          "name_ko": "빛의 돔·메이리다오역",
+          "name_local": "光之穹頂・美麗島站",
+          "category": "culture",
+          "one_liner": "대형 스테인드글라스 작품으로 유명한 MRT 환승역",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "빛의 돔 메이리다오역", "visit_min": 60, "area": "신싱"
+        },
+        {
+          "name_ko": "웨이우잉 국가예술문화센터",
+          "name_local": "衛武營國家藝術文化中心",
+          "category": "culture",
+          "one_liner": "대형 단일 지붕 아래 공연장과 공원이 연결된 현대 건축 명소",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "웨이우잉 국가예술문화센터", "visit_min": 120, "area": "펑산"
+        },
+        {
+          "name_ko": "서우산 연인 전망대",
+          "name_local": "壽山情人觀景台",
+          "category": "nature",
+          "one_liner": "항구·도심·바다를 함께 내려다보는 노을과 야경 전망대",
+          "best_season": ["all"],
+          "stability": "popular", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "서우산 연인 전망대 가오슝", "visit_min": 90,
+          "preferred_times": ["afternoon"], "area": "구산"
         }
       ]
     }

@@ -145,4 +145,4 @@ uv run python -m unittest -v test_playmcp_compliance.py
 
 ## 기여
 
-관광지 큐레이션 수정·추가는 `destinations_jp.json` 을 편집해 PR 을 올린다. 편집 규칙은 `.claude/rules/curation.md` 참조. 서버는 24시간 안에 변경사항을 자동 반영한다.
+관광지 큐레이션 수정·추가는 대상 국가의 `curation/destinations_{국가코드}.json` 을 편집해 PR 을 올린다. 일본 파일은 외부 JSON 갱신 주기에 따라 반영되며, 그 외 국가의 번들 큐레이션은 재배포 시 반영된다.

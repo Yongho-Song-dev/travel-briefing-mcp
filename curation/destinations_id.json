@@ -1,7 +1,7 @@
 {
   "country": "ID",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "bali": {
       "name_ko": "발리",
@@ -105,6 +105,43 @@
             "morning",
             "lunch"
           ]
+        },
+        {
+          "name_ko": "티르타 엠풀 사원", "name_local": "Pura Tirta Empul",
+          "category": "culture", "one_liner": "성스러운 샘과 멜루캇 정화 의식으로 알려진 힌두 사원",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "티르타 엠풀 사원 발리",
+          "visit_min": 120, "area": "탐팍시링·우붓"
+        },
+        {
+          "name_ko": "베사키 사원 (당일치기)", "name_local": "Pura Besakih",
+          "category": "culture", "one_liner": "아궁산 기슭의 발리 최대 힌두 사원 단지",
+          "best_season": ["spring", "summer", "autumn"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "베사키 사원 발리",
+          "trip_scope": "full_day", "visit_min": 480,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "카라앙아섬(근교)"
+        },
+        {
+          "name_ko": "짐바란 비치", "name_local": "Jimbaran Beach",
+          "category": "food", "one_liner": "해변 노을과 씨푸드 식사를 함께 즐기는 어촌 해안",
+          "best_season": ["spring", "summer", "autumn"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "짐바란 비치 발리",
+          "preferred_times": ["evening"], "food_hint": "숯불 해산물·나시고렝 — 1인 약 150,000~350,000 IDR",
+          "visit_min": 150, "area": "짐바란"
+        },
+        {
+          "name_ko": "티르타 강가", "name_local": "Tirta Gangga",
+          "category": "nature", "one_liner": "분수·연못·석상이 어우러진 옛 왕실 수상 정원",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "티르타 강가 발리",
+          "visit_min": 120, "area": "카라앙아섬"
+        },
+        {
+          "name_ko": "뜨그눙안 폭포", "name_local": "Tegenungan Waterfall",
+          "category": "nature", "one_liner": "우붓 남쪽 정글 계곡에 자리한 접근성 좋은 폭포",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "뜨그눙안 폭포 발리",
+          "visit_min": 120, "area": "기안야르"
         }
       ]
     }

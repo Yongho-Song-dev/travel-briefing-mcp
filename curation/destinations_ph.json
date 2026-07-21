@@ -1,7 +1,7 @@
 {
   "country": "PH",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "cebu": {
       "name_ko": "세부",
@@ -23,7 +23,9 @@
           "aliases": [
             "막탄섬",
             "호핑투어"
-          ]
+          ],
+          "trip_scope": "full_day", "visit_min": 420,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "막탄 해역"
         },
         {
           "name_ko": "마젤란 십자가",
@@ -104,6 +106,34 @@
             "morning",
             "lunch"
           ]
+        },
+        {
+          "name_ko": "산 페드로 요새", "name_local": "Fort San Pedro",
+          "category": "culture", "one_liner": "필리핀에서 가장 오래된 삼각형 석조 요새",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "산 페드로 요새 세부",
+          "visit_min": 90, "area": "세부 올드타운"
+        },
+        {
+          "name_ko": "세부 유산 기념비·파리안", "name_local": "Cebu Heritage Monument・Parian",
+          "category": "culture", "one_liner": "세부 역사를 조각으로 표현한 기념비와 구시가지",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "세부 유산 기념비 파리안",
+          "visit_min": 90, "area": "세부 올드타운"
+        },
+        {
+          "name_ko": "레아 신전", "name_local": "Temple of Leah",
+          "category": "culture", "one_liner": "산비탈 전망과 고전 양식 회랑이 특징인 기념 건축물",
+          "best_season": ["all"], "stability": "popular", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "레아 신전 세부",
+          "visit_min": 120, "area": "부사이"
+        },
+        {
+          "name_ko": "시라오 가든", "name_local": "Sirao Garden",
+          "category": "nature", "one_liner": "산지 꽃밭과 조형물을 배경으로 사진 찍기 좋은 정원",
+          "best_season": ["all"], "stability": "popular", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "시라오 가든 세부",
+          "visit_min": 120, "area": "부사이"
         }
       ]
     },
@@ -180,7 +210,9 @@
           "stability": "popular",
           "status": "active",
           "verified_date": "2026-07-15",
-          "search_query": "보라카이 호핑투어"
+          "search_query": "보라카이 호핑투어",
+          "trip_scope": "full_day", "visit_min": 420,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "보라카이 해역"
         },
         {
           "name_ko": "디몰",
@@ -198,6 +230,34 @@
             "lunch",
             "evening"
           ]
+        },
+        {
+          "name_ko": "루호산 전망대", "name_local": "Mount Luho",
+          "category": "nature", "one_liner": "보라카이 섬과 해안을 360도로 내려다보는 최고 지점",
+          "best_season": ["winter", "spring"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "루호산 전망대 보라카이",
+          "visit_min": 90, "area": "루호산"
+        },
+        {
+          "name_ko": "디니위드 비치", "name_local": "Diniwid Beach",
+          "category": "nature", "one_liner": "화이트 비치 북쪽의 비교적 한적한 작은 해변",
+          "best_season": ["winter", "spring"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "디니위드 비치 보라카이",
+          "visit_min": 120, "area": "디니위드"
+        },
+        {
+          "name_ko": "일리그 일리간 비치", "name_local": "Ilig-Iligan Beach",
+          "category": "nature", "one_liner": "섬 북동쪽의 조용한 백사장과 맑은 바다",
+          "best_season": ["winter", "spring"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "일리그 일리간 비치 보라카이",
+          "visit_min": 150, "area": "일리그 일리간"
+        },
+        {
+          "name_ko": "파라우 선셋 세일링", "name_local": "Paraw Sunset Sailing",
+          "category": "nature", "one_liner": "전통 돛단배에서 화이트 비치 노을을 감상하는 체험",
+          "best_season": ["winter", "spring"], "stability": "popular", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "파라우 선셋 세일링 보라카이",
+          "visit_min": 90, "preferred_times": ["afternoon"], "area": "화이트 비치"
         }
       ]
     }

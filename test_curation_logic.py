@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 import tb_api
 from tb_api import _fetch_naver_blog
 from tb_config import (
-    CURATED_COUNTRIES, _CITY_DAILY_COST, _NAVER_BLOG_DISPLAY, city_meta,
+    CURATED_COUNTRIES, _CITY_DAILY_COST, _NAVER_BLOG_DISPLAY, _STATIC, city_meta,
 )
 from tb_helpers import (
     _count_spot_mentions,
@@ -29,6 +29,7 @@ from tb_helpers import (
     _render_destinations_md,
     _render_essentials_md,
     _render_itinerary_md,
+    _render_season_advice_md,
     _trip_period_label,
     resolve_city_key,
     resolve_trip_dates,
@@ -96,8 +97,8 @@ class CurationLogicTest(unittest.TestCase):
         self.assertNotIn("🌙 저녁 · [츠키지 장외시장]", md)
         self.assertIn("우에노 공원", md)
         self.assertIn("우에노 아메요코 시장", md)
-        self.assertIn("🚶 같은 구역 · 도보 이동권", md)
-        self.assertNotIn("대중교통 약 30분", md)
+        self.assertIn("🚶 우에노 구역 내 · 도보 약 10분", md)
+        self.assertIn("대중교통 약 30분", md)
 
     def test_purpose_sights_per_day_changes_slots(self) -> None:
         friends = "\n".join(_render_day_plan_md("교토", self.spots("kyoto"), "friends", 2))
@@ -260,6 +261,8 @@ class CurationLogicTest(unittest.TestCase):
         self.assertLessEqual(len(desc), 1024)
         self.assertIn("Travel Briefing(트래블 브리핑)", desc)
         self.assertIn("preserve", desc.lower())
+        self.assertIn("OUTPUT CONTRACT", desc)
+        self.assertIn("먼저 보는 핵심 요약", desc)
         for kw in ("dates", "warnings", "map URLs"):
             self.assertIn(kw, desc)
 
@@ -323,7 +326,10 @@ class CurationLogicTest(unittest.TestCase):
         self.assertIsNone(_krw_per_unit({"quoted": False, "rate": None, "usd": {"deal_bas_r": 1380}}))
 
     def test_daily_cost_covers_every_curated_city(self) -> None:
-        """큐레이션 도시인데 비용이 없으면 코스만 나오고 예산이 빠진다."""
+        """큐레이션 도시는 5키 일반형 스키마를 모두 갖춰야 도시 간 경비 밀도가 일관된다."""
+        # 3키(transport/food/admission)로 되돌아가면 카페·간식·예비비가 빠져
+        # 특정 도시만 합계가 낮게 나오는 불일치가 생긴다 (QA v3 P0-1).
+        keys = ("transport", "food", "cafe_snack", "admission", "contingency")
         for country in CURATED_COUNTRIES:
             path = ROOT / "curation" / f"destinations_{country.lower()}.json"
             with path.open(encoding="utf-8") as f:
@@ -332,8 +338,25 @@ class CurationLogicTest(unittest.TestCase):
                 with self.subTest(country=country, city=city_key):
                     cost = _CITY_DAILY_COST.get(city_key)
                     self.assertIsNotNone(cost)
-                    for k in ("transport", "food", "admission"):
-                        self.assertGreater(cost.get(k, 0), 0)
+                    for k in keys:
+                        self.assertGreater(cost.get(k, 0), 0, f"{city_key}.{k}")
+
+    def test_every_curated_country_answers_season_judgment(self) -> None:
+        """계절 판단이 대만에만 있으면 주력국(일본) 여름 질문에 여행 적합성이 빠진다 (QA v3 P1-2)."""
+        for country in CURATED_COUNTRIES:
+            static = _STATIC.get(country, {})
+            advice = static.get("monthly_advice", {})
+            with self.subTest(country=country):
+                self.assertTrue(advice, f"{country} monthly_advice 비어 있음")
+                for month, entry in advice.items():
+                    self.assertEqual(
+                        set(entry), {"verdict", "schedule", "backup"},
+                        f"{country}.{month} 키 불일치",
+                    )
+        # 월/날짜 단서가 있을 때만 노출되고, 단서가 없으면 조용히 생략한다.
+        jp_aug = "\n".join(_render_season_advice_md("JP", 8, "month"))
+        self.assertIn("8월 여행 판단", jp_aug)
+        self.assertEqual(_render_season_advice_md("JP", 8, "none"), [])
 
     def test_cost_section_shows_totals_and_degrades_without_quote(self) -> None:
         """비용은 서버가 확정 숫자로 줘야 호스트 LLM 이 지어내지 않는다."""
@@ -341,19 +364,133 @@ class CurationLogicTest(unittest.TestCase):
                 "rate": {"currency": "JPY(100)", "deal_bas_r": 913.27,
                          "search_date": "2026-07-17", "is_stale": False}}
         md = "\n".join(_render_cost_md("JP", "tokyo", exch, 2))
-        self.assertIn("8,700 JPY", md)          # 1200 + 6000 + 1500
-        self.assertIn("26,100 JPY", md)         # 3일치
-        self.assertIn("약 79,000원", md)         # 8700 * 9.1327 반올림
-        self.assertNotIn("항공", md.split("\n")[1])   # 항공·숙박은 합계에 넣지 않는다
+        self.assertIn("16,000 JPY", md)
+        self.assertIn("48,000 JPY", md)
+        self.assertIn("약 146,000원", md)
+        self.assertIn("항공·숙박·쇼핑 제외", md)
 
         # 미고시 통화는 원화 환산 없이 현지 통화로만
         vnd = "\n".join(_render_cost_md("VN", "danang", {"quoted": False, "rate": None}, 2))
-        self.assertIn("650,000 VND", vnd)
+        self.assertIn("1,020,000 VND", vnd)
         self.assertNotIn("원)", vnd)
         self.assertIn("미고시", vnd)
 
         # 비용 데이터가 없는 도시는 섹션 자체를 생략
         self.assertEqual(_render_cost_md("JP", None, exch, 2), [])
+
+    def test_couple_cost_keeps_people_and_exclusion_assumptions(self) -> None:
+        """카카오가 축약해도 커플 2인과 제외 항목이 숫자 곁에 남아야 한다."""
+        md = "\n".join(_render_cost_md("JP", "tokyo", None, 2, "couple", None))
+        self.assertIn("2인 하루 일반형", md)
+        self.assertIn("32,000 JPY", md)
+        self.assertIn("3일 2인 현지 체류비", md)
+        self.assertIn("96,000 JPY", md)
+        self.assertIn("인원 미입력 시 2명", md)
+        self.assertIn("항공·숙박·쇼핑 제외", md)
+
+        atomic = next(line for line in md.splitlines() if "필수 예산 요약" in line)
+        for value in ("커플 2인", "32,000 JPY/일", "3일 96,000 JPY", "항공·숙박·쇼핑 제외"):
+            self.assertIn(value, atomic)
+
+    def test_priority_summary_keeps_judgment_budget_and_meals_together(self) -> None:
+        """앞부분만 쓰는 카카오 응답에서도 계절 판단·2인 예산·Day별 음식이 남아야 한다."""
+        with (ROOT / "curation" / "destinations_tw.json").open(encoding="utf-8") as f:
+            spots = json.load(f)["cities"]["taipei"]["spots"]
+        d = resolve_trip_dates(None, None, 8, 4)
+        md = _render_itinerary_md(
+            "TW", "타이베이 8월 커플 여행", [],
+            d["depart"].isoformat(), d["return"].isoformat(), None,
+            "couple", None, "4박5일", "taipei", depart_month=8,
+            estimated=True, spots=spots, nights=4,
+            visa={"required": False, "duration_days": 90},
+            alert={"level": 0, "level_name": "미발령", "issued_at": "-",
+                   "note": "-", "ok": True},
+            season={"season": "off", "note": "여름 비수기"}, basis="month",
+        )
+        summary_start = md.index("## ✅ 먼저 보는 핵심 요약")
+        summary_end = md.index("## ✈️ 출발 전 필수", summary_start)
+        summary = md[summary_start:summary_end]
+        self.assertLess(summary_start, md.index("## 🗓 4박5일 코스 제안"))
+        for value in (
+            "여행 판단", "여행은 가능", "커플 2인", "4,800 TWD/일",
+            "5일 24,000 TWD", "항공·숙박·쇼핑 제외",
+        ):
+            self.assertIn(value, summary)
+        self.assertEqual(summary.count("**Day "), 5)
+        for line in (line for line in summary.splitlines() if line.startswith("- **Day ")):
+            self.assertIn("식사 ", line)
+            self.assertRegex(line, r"1인 약 [\d,]+~[\d,]+ TWD")
+
+    def test_city_meals_are_specific_varied_and_priced(self) -> None:
+        """'현지 로컬 맛집' 반복 대신 도시 대표 메뉴를 끼니별로 다르게 제안한다."""
+        for country, city, city_ko, path in (
+            ("JP", "tokyo", "도쿄", ROOT / "curation" / "destinations_jp.json"),
+            ("TW", "taipei", "타이베이", ROOT / "curation" / "destinations_tw.json"),
+        ):
+            with path.open(encoding="utf-8") as f:
+                spots = json.load(f)["cities"][city]["spots"]
+            md = "\n".join(_render_day_plan_md(
+                city_ko, spots, "couple", 4, country=country, city_key=city,
+            ))
+            with self.subTest(city=city):
+                self.assertNotIn("현지 로컬 맛집", md)
+                self.assertNotIn("대표 먹거리:", md)
+                currency = {"JP": "JPY", "TW": "TWD"}[country]
+                self.assertRegex(md, rf"1인 약 [\d,]+~[\d,]+ {currency}")
+                menus = re.findall(r"\*\*([^*]+ — 1인 약 [^*]+)\*\*", md)
+                self.assertGreaterEqual(len(menus), 5)
+                self.assertEqual(len(menus), len(set(menus)))
+
+    def test_taipei_long_trip_is_dense_and_separates_jiufen(self) -> None:
+        with (ROOT / "curation" / "destinations_tw.json").open(encoding="utf-8") as f:
+            spots = json.load(f)["cities"]["taipei"]["spots"]
+        md = "\n".join(_render_day_plan_md(
+            "타이베이", spots, "couple", 4, country="TW", city_key="taipei",
+        ))
+        self.assertNotIn("자유 시간 (카페·산책·쇼핑)", md)
+        day2 = md.split("**Day 2**", 1)[1].split("**Day 3**", 1)[0]
+        self.assertIn("지우펀", day2)
+        self.assertIn("약 6시간", day2)
+        self.assertNotIn("국립고궁박물원", day2)
+        for name in ("디화제", "베이터우", "단수이"):
+            self.assertIn(name, md)
+        day4 = md.split("**Day 4**", 1)[1].split("**Day 5**", 1)[0]
+        self.assertNotIn("국립고궁박물원", day4)
+
+    def test_every_non_japan_curated_city_supports_a_long_trip(self) -> None:
+        """일본 외 도시도 4박5일에 장소가 소진돼 기존 자유시간 문구로 도배되면 안 된다."""
+        for country in (c for c in CURATED_COUNTRIES if c != "JP"):
+            path = ROOT / "curation" / f"destinations_{country.lower()}.json"
+            with path.open(encoding="utf-8") as f:
+                cities = json.load(f)["cities"]
+            for city_key, city_data in cities.items():
+                spots = city_data["spots"]
+                md = "\n".join(_render_day_plan_md(
+                    city_data["name_ko"], spots, "couple", 4,
+                    country=country, city_key=city_key,
+                ))
+                with self.subTest(country=country, city=city_key):
+                    self.assertGreaterEqual(len(spots), 10)
+                    self.assertEqual(md.count("**Day "), 5)
+                    self.assertNotIn("자유 시간 (카페·산책·쇼핑)", md)
+                    self.assertGreaterEqual(md.count("https://www.google.com/maps/search/"), 8)
+
+                    full_day_names = {
+                        s["name_ko"] for s in spots if s.get("trip_scope") == "full_day"
+                    }
+                    if full_day_names:
+                        day1 = md.split("**Day 1**", 1)[1].split("**Day 2**", 1)[0]
+                        day2 = md.split("**Day 2**", 1)[1].split("**Day 3**", 1)[0]
+                        day5 = md.split("**Day 5**", 1)[1]
+                        self.assertTrue(any(name in day2 for name in full_day_names))
+                        self.assertFalse(any(name in day1 for name in full_day_names))
+                        self.assertFalse(any(name in day5 for name in full_day_names))
+
+    def test_august_taiwan_advice_answers_suitability_question(self) -> None:
+        md = "\n".join(_render_season_advice_md("TW", 8, "month"))
+        for keyword in ("8월 여행 판단", "여행은 가능", "폭염", "태풍", "박물관·쇼핑몰"):
+            self.assertIn(keyword, md)
+        self.assertEqual(_render_season_advice_md("TW", 8, "none"), [])
 
     def test_dated_event_is_hedged_when_departure_is_unknown(self) -> None:
         """출발일 미정인데 특정일 행사를 확정 추천하면 여행 기간과 어긋난다 (QA v2 P0-3)."""
@@ -391,11 +528,12 @@ class CurationLogicTest(unittest.TestCase):
         # 코스가 있으면 방향 제안은 중복 → 생략, 후기는 2건으로 축약
         self.assertNotIn("방향 제안", with_plan)
         self.assertEqual(with_plan.count("https://b.test/"), 2)
-        self.assertIn("💰 1일 예상 경비", with_plan)
+        self.assertNotIn("d" * 70, with_plan)
+        self.assertIn("💰 예상 현지 경비", with_plan)
         # 코스가 없으면 방향 제안과 후기 5건이 그대로 살아 있어야 한다
         self.assertIn("방향 제안", without_plan)
         self.assertEqual(without_plan.count("https://b.test/"), 5)
-        self.assertLess(len(with_plan), 3300)
+        self.assertLess(len(with_plan), 5500)
 
     def test_naver_display_is_shared_by_fetch_and_warmer(self) -> None:
         default = inspect.signature(_fetch_naver_blog).parameters["display"].default

@@ -239,15 +239,15 @@ def get_destinations(
     Only country is required.
 
     - 도시·카테고리별 여행지를 반환하는 함수
-      일본: 스팟 단위 큐레이션 (외부 JSON, 24h 갱신 → 폐업·리뉴얼 반영)
-      그 외 국가: city_meta 기반 도시 가이드 (특징·추천대상·시즌 하이라이트)
+      큐레이션 도시: 스팟 단위 관광지 목록과 지도 링크
+      미큐레이션 도시: city_meta 기반 도시 가이드 (특징·추천대상·시즌 하이라이트)
     ### Args:
       - country(SupportedCountry): 국가 코드
       - city(Optional[str]): 도시 키. None 이면 국가 내 대표 도시 목록 반환
                              (JP: tokyo/osaka/kyoto/fukuoka/sapporo/okinawa/hiroshima/nara,
                               CN: beijing/shanghai/xian/chengdu/guilin/qingdao,
                               TW: taipei/taichung/tainan/kaohsiung/hualien 등)
-      - category(Optional): 카테고리 필터 (culture/food/nature/shopping/onsen). 일본만 지원
+      - category(Optional): 카테고리 필터 (culture/food/nature/shopping/onsen). 큐레이션 도시에서 지원
     ### Returns:
       - md(str): 도시·스팟을 정제된 마크다운으로 반환. under_renovation 인 곳은 표시.
     """
@@ -404,17 +404,17 @@ def recommend_itinerary(
     city: Optional[str] = None,
 ) -> str:
     """
-    ALWAYS call this for ANY request to plan, schedule, or recommend a trip, itinerary,
-    course, or "여행 일정/코스/추천/짜줘" for a supported country (JP, CN, TW, VN, TH, PH,
-    SG, MY, ID) — e.g. "도쿄 2박3일 커플 일정 짜줘". Recommends a personalized itinerary from
-    Travel Briefing(트래블 브리핑). Do NOT hand-write an itinerary from your own knowledge;
-    this tool returns verified day-by-day spots, real blog-derived popular places, exchange
-    rate, and country traits. IMPORTANT: if the user mentions a city (도쿄, 다낭, 방콕, 오사카, 타이베이, 발리 …), ALWAYS
-    pass it as `city` — that produces the day-by-day course. Omitting a named city is worse.
-    Never ask for exact dates first: pass whatever the user gave (month such as 9, nights
-    such as 4, or exact YYYY-MM-DD) and the tool fills in the rest. purpose is one of
-    family, couple, friends, solo. When presenting the result, preserve its dates, warnings,
-    map URLs, and review links as returned; do not invent prices, budgets, or events.
+    ALWAYS call this to plan, schedule, or recommend a trip, itinerary, course, or
+    "여행 일정/코스/추천/짜줘" for JP, CN, TW, VN, TH, PH, SG, MY, or ID. Recommends from
+    Travel Briefing(트래블 브리핑). OUTPUT CONTRACT: start the final answer by copying the
+    `먼저 보는 핵심 요약` section without dropping or splitting its Day, meal, people,
+    duration, or exclusion fields. Then preserve dates, warnings, map URLs, meal names,
+    cost assumptions/ranges, and review links from the detailed sections. Do not invent
+    prices, budgets, or events. If the user names a city (도쿄, 다낭, 방콕, 오사카,
+    타이베이, 발리 …), ALWAYS pass it as `city`; omission removes the day-by-day course.
+    Never ask for exact dates first: pass the given month, NIGHTS, or YYYY-MM-DD and the
+    tool fills in the rest. purpose is family, couple, friends, or solo. Do NOT hand-write
+    an itinerary from model knowledge or replace the returned itinerary with a shorter one.
     """
     if city:
         resolved_city = resolve_city_key(country, city)

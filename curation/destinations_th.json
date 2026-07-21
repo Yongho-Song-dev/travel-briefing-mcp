@@ -1,7 +1,7 @@
 {
   "country": "TH",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "bangkok": {
       "name_ko": "방콕",
@@ -107,6 +107,43 @@
           "status": "active",
           "verified_date": "2026-07-15",
           "search_query": "아시아티크 방콕"
+        },
+        {
+          "name_ko": "짐 톰슨 하우스",
+          "name_local": "พิพิธภัณฑ์บ้าน จิม ทอมป์สัน",
+          "category": "culture",
+          "one_liner": "태국 전통가옥과 실크 컬렉션을 보는 도심 박물관",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "짐 톰슨 하우스 방콕", "visit_min": 90, "area": "시암"
+        },
+        {
+          "name_ko": "방콕 예술문화센터",
+          "name_local": "หอศิลปวัฒนธรรมแห่งกรุงเทพมหานคร",
+          "category": "culture",
+          "one_liner": "현대미술 전시와 디자인숍이 모인 무료 문화공간",
+          "best_season": ["all"],
+          "stability": "popular", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "방콕 예술문화센터 BACC", "visit_min": 120, "area": "시암"
+        },
+        {
+          "name_ko": "룸피니 공원",
+          "name_local": "สวนลุมพินี",
+          "category": "nature",
+          "one_liner": "호수와 산책로가 있는 방콕 중심의 대형 녹지",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "룸피니 공원 방콕", "visit_min": 90, "area": "실롬"
+        },
+        {
+          "name_ko": "아유타야 역사공원 (당일치기)",
+          "name_local": "อุทยานประวัติศาสตร์พระนครศรีอยุธยา",
+          "category": "culture",
+          "one_liner": "옛 왕국의 사원 유적을 둘러보는 방콕 근교 역사 코스",
+          "best_season": ["winter"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "아유타야 역사공원", "trip_scope": "full_day", "visit_min": 480,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "아유타야(근교)"
         }
       ]
     },
@@ -197,6 +234,43 @@
           "preferred_times": [
             "evening"
           ]
+        },
+        {
+          "name_ko": "왓 프라싱",
+          "name_local": "วัดพระสิงห์วรมหาวิหาร",
+          "category": "culture",
+          "one_liner": "란나 양식 불전과 프라싱 불상으로 유명한 올드시티 사원",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "왓 프라싱 치앙마이", "visit_min": 90, "area": "올드시티"
+        },
+        {
+          "name_ko": "타패 게이트",
+          "name_local": "ประตูท่าแพ",
+          "category": "culture",
+          "one_liner": "올드시티 동쪽 성문과 광장을 잇는 대표 만남의 장소",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "타패 게이트 치앙마이", "visit_min": 60, "area": "올드시티"
+        },
+        {
+          "name_ko": "왓 우몽",
+          "name_local": "วัดอุโมงค์",
+          "category": "culture",
+          "one_liner": "숲과 고대 터널 법당이 어우러진 명상 사원",
+          "best_season": ["all"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "왓 우몽 치앙마이", "visit_min": 120, "area": "수텝"
+        },
+        {
+          "name_ko": "도이 인타논 국립공원 (당일치기)",
+          "name_local": "อุทยานแห่งชาติดอยอินทนนท์",
+          "category": "nature",
+          "one_liner": "태국 최고봉·폭포·왕실탑을 묶어 보는 산악 코스",
+          "best_season": ["winter", "spring"],
+          "stability": "landmark", "status": "active", "verified_date": "2026-07-21",
+          "search_query": "도이 인타논 국립공원", "trip_scope": "full_day", "visit_min": 540,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "도이 인타논(근교)"
         }
       ]
     }

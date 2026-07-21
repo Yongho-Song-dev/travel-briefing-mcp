@@ -1,7 +1,7 @@
 {
   "country": "CN",
   "schema_version": 1,
-  "last_reviewed": "2026-07-15",
+  "last_reviewed": "2026-07-21",
   "cities": {
     "beijing": {
       "name_ko": "베이징",
@@ -41,7 +41,9 @@
           "aliases": [
             "만리장성",
             "바다링"
-          ]
+          ],
+          "trip_scope": "full_day", "visit_min": 420,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "바다링(근교)"
         },
         {
           "name_ko": "천안문 광장",
@@ -99,6 +101,34 @@
             "lunch",
             "evening"
           ]
+        },
+        {
+          "name_ko": "용허궁 라마 사원", "name_local": "雍和宫",
+          "category": "culture", "one_liner": "청 황실 건축과 티베트 불교 문화가 결합된 사원",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "용허궁 라마 사원 베이징",
+          "visit_min": 120, "area": "둥청 북부"
+        },
+        {
+          "name_ko": "스차하이·후퉁", "name_local": "什刹海・胡同",
+          "category": "culture", "one_liner": "호수와 전통 골목을 함께 걷는 베이징 옛 도심 산책",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "스차하이 후퉁 베이징",
+          "visit_min": 180, "area": "스차하이"
+        },
+        {
+          "name_ko": "798 예술구", "name_local": "798艺术区",
+          "category": "culture", "one_liner": "옛 공장지대에 갤러리와 디자인숍이 모인 현대예술 구역",
+          "best_season": ["all"], "stability": "popular", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "798 예술구 베이징",
+          "visit_min": 180, "area": "차오양"
+        },
+        {
+          "name_ko": "베이하이 공원", "name_local": "北海公园",
+          "category": "nature", "one_liner": "황실 정원과 백탑·호수를 둘러보는 도심 공원",
+          "best_season": ["spring", "summer", "autumn"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "베이하이 공원 베이징",
+          "visit_min": 150, "area": "스차하이"
         }
       ]
     },
@@ -169,7 +199,9 @@
           "aliases": [
             "상하이 디즈니",
             "디즈니랜드"
-          ]
+          ],
+          "trip_scope": "full_day", "visit_min": 600,
+          "avoid_first_day": true, "avoid_last_day": true, "area": "푸둥 디즈니"
         },
         {
           "name_ko": "티엔즈팡",
@@ -200,6 +232,34 @@
             "lunch",
             "evening"
           ]
+        },
+        {
+          "name_ko": "신톈디", "name_local": "新天地",
+          "category": "shopping", "one_liner": "석고문 건축을 살린 레스토랑·쇼핑 문화지구",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "신톈디 상하이",
+          "visit_min": 150, "area": "황푸"
+        },
+        {
+          "name_ko": "상하이 박물관", "name_local": "上海博物馆",
+          "category": "culture", "one_liner": "중국 고대 청동기·도자기·서화를 소장한 대표 박물관",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "상하이 박물관 인민광장",
+          "visit_min": 180, "area": "인민광장"
+        },
+        {
+          "name_ko": "푸싱공원·구 프랑스 조계 산책", "name_local": "复兴公园・原法租界",
+          "category": "nature", "one_liner": "플라타너스 거리와 프랑스식 정원을 잇는 도심 산책 코스",
+          "best_season": ["spring", "autumn"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "푸싱공원 프랑스 조계 상하이",
+          "visit_min": 180, "area": "황푸"
+        },
+        {
+          "name_ko": "옥불선사", "name_local": "玉佛禅寺",
+          "category": "culture", "one_liner": "백옥 불상을 모신 상하이 대표 불교 사원",
+          "best_season": ["all"], "stability": "landmark", "status": "active",
+          "verified_date": "2026-07-21", "search_query": "옥불선사 상하이",
+          "visit_min": 90, "area": "징안"
         }
       ]
     }
