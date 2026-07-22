@@ -449,38 +449,45 @@ def _parse_warning_item(item: dict) -> dict:
     """
     level = 0
     notes: list[str] = []
+    regions: list[dict] = []
 
+    # (필드, 노트필드, 실제 레벨, 라벨, 일부여부)
     checks = [
-        ("ban_yna",        "ban_note",     4, "여행금지"),
-        ("ban_yn_partial", "ban_note",     4, "여행금지(일부)"),
-        ("limita",         "limita_note",  3, "출국권고"),
-        ("limita_partial", "limita_note",  0, "출국권고(일부)"),   # 전국 레벨 미반영
-        ("control",        "control_note", 2, "여행자제"),
-        ("control_partial","control_note", 0, "여행자제(일부)"),
-        ("attention",      "attention_note", 1, "여행유의"),
-        ("attention_partial","attention_note", 0, "여행유의(일부)"),
+        ("ban_yna",          "ban_note",       4, "여행금지", False),
+        ("ban_yn_partial",   "ban_note",       4, "여행금지", True),
+        ("limita",           "limita_note",    3, "출국권고", False),
+        ("limita_partial",   "limita_note",    3, "출국권고", True),
+        ("control",          "control_note",   2, "여행자제", False),
+        ("control_partial",  "control_note",   2, "여행자제", True),
+        ("attention",        "attention_note", 1, "여행유의", False),
+        ("attention_partial","attention_note", 1, "여행유의", True),
     ]
-    for field, note_field, lvl, label in checks:
-        if item.get(field):
+    for field, note_field, lvl, label, partial in checks:
+        if not item.get(field):
+            continue
+        # 전국(요약) 레벨: partial 은 미반영하되 '여행금지 일부' 만 심각도상 반영(기존 규칙 유지).
+        # 지역별 상세(regions)는 실제 레벨을 그대로 담아 렌더러가 목적지별로 안내한다.
+        if not partial or lvl == 4:
             level = max(level, lvl)
-            raw = item.get(note_field) or item.get(field) or ""
-            # 공공데이터포털 응답이 이중 HTML 이스케이프인 경우를 처리
-            region = raw
-            for _ in range(2):
-                unescaped = html.unescape(region)
-                if unescaped == region:
-                    break
-                region = unescaped
-            if region and region != label:
-                notes.append(f"{label}: {region}")
-            else:
-                notes.append(label)
+        raw = item.get(note_field) or item.get(field) or ""
+        # 공공데이터포털 응답이 이중 HTML 이스케이프인 경우를 처리
+        region = raw
+        for _ in range(2):
+            unescaped = html.unescape(region)
+            if unescaped == region:
+                break
+            region = unescaped
+        region = region.strip()
+        display = f"{label}(일부)" if partial else label
+        notes.append(f"{display}: {region}" if region and region != label else display)
+        regions.append({"level": lvl, "label": label, "partial": partial, "region": region})
 
     return {
         "level": level,
         "level_name": _LEVEL_NAME.get(level, "정보 없음"),
         "issued_at": item.get("wrt_dt") or "-",
         "note": " / ".join(notes) if notes else "-",
+        "regions": regions,
     }
 
 

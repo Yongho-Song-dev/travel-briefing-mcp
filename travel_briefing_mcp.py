@@ -50,6 +50,7 @@ from tb_helpers import (
     resolve_city_key,
     _exchange_line, resolve_trip_dates,
     _render_alert_md, _render_exchange_md, _render_briefing_md,
+    _render_local_tips_md, _advisory_summary,
     _render_flight_md, _render_destinations_md, _render_city_guide_md,
     _render_itinerary_md, _trip_period_label, _render_season_advice_md,
 )
@@ -127,21 +128,25 @@ def tool(**kwargs: Any) -> Callable:
 # 툴 7개
 # ===========================================================================
 @tool(annotations={"title": "Trip Briefing", "openWorldHint": True, **_READONLY})
-def get_trip_briefing(country: SupportedCountry) -> str:
+def get_trip_briefing(country: SupportedCountry, city: Optional[str] = None) -> str:
     """
     Use this when the user asks about visa requirements, plug/voltage, time difference,
-    emergency numbers, or the Korean embassy for a country — for example "일본 비자 필요해?".
-    Retrieves pre-trip essentials from Travel Briefing(트래블 브리핑), with visa status
-    from the Korean MOFA API. Falls back to cached static visa info if MOFA is unavailable.
+    emergency numbers, packing, local customs, or practical country-specific tips — for example
+    "일본 비자 필요해?", "발리에서 조심할 점은?", or "대만 준비물 알려줘". Retrieves
+    pre-trip essentials and detailed local tips from Travel Briefing(트래블 브리핑), with visa
+    status from the Korean MOFA API. Falls back to cached static visa info if MOFA is unavailable.
+    Pass city (도쿄, 발리 …) when the user names one, so city-specific tips are filtered correctly.
 
     - 출발 전 필수 정보(비자는 외교부 동적, 나머지는 정적/대사관 외부JSON)를 마크다운으로 반환하는 함수
     ### Args:
       - country(SupportedCountry): 국가 코드 ('JP')
+      - city(Optional[str]): 도시명. 주면 도시 전용 팁(발리 차낭 사리 등)을 목적지에 맞게 필터
     ### Returns:
       - md(str): 비자/전압/시차/통화/긴급/대사관 마크다운 + 면책 + 외교부 폴백 시 경고
     """
     static = _STATIC[country]
     embassy = get_embassy(country)
+    city_key = resolve_city_key(country, city) if city else None
 
     visa_warning = ""
     mofa = _fetch_mofa_visa(country)
@@ -149,25 +154,32 @@ def get_trip_briefing(country: SupportedCountry) -> str:
     if not mofa:
         visa_warning = "\n> ⚠️ 비자 정보 실시간 갱신 실패 — 출발 전 외교부 영사콜(02-3210-0404) 재확인 필수"
 
-    return _render_briefing_md(country, static, visa, embassy) + visa_warning
+    return _render_briefing_md(country, static, visa, embassy, city_key) + visa_warning
 
 
 @tool(annotations={"title": "Current Status", "openWorldHint": True, **_READONLY})
-def get_current_status(country: SupportedCountry) -> str:
+def get_current_status(country: SupportedCountry, city: Optional[str] = None) -> str:
     """
-    Use this when the user asks whether a country is safe to visit right now — for example
-    "지금 중국 가도 안전해?". Retrieves the current MOFA travel-advisory level, effective
-    date, and regional advisory note from Travel Briefing(트래블 브리핑). The calling LLM
-    should use these official signals when explaining the overall situation.
+    Use this when the user asks about the current situation, safety, or whether it is fine to
+    go to a country now — e.g. "지금 태국 가도 괜찮을까?", "필리핀 세부 지금 여행 어때?",
+    "지금 중국 가도 될까?". Returns the MOFA travel-advisory level nationwide AND broken down
+    by region, with a level legend, from Travel Briefing(트래블 브리핑). Report these official
+    signals as fact and by region; do NOT declare a country blanketly safe or dangerous — the
+    advisory usually differs by area, so tie the answer to the destination the user named.
+    Also includes concise local safety, transport, payment, and etiquette tips.
 
-    - 외교부 여행경보 단계와 발효일을 반환하는 함수(뉴스는 v1 미포함)
+    - 외교부 여행경보를 전국 기준 + 지역별 단계로 반환하는 함수(안전/위험을 단정하지 않음)
     ### Args:
       - country(SupportedCountry): 국가 코드
+      - city(Optional[str]): 도시명. 주면 도시 전용 팁을 목적지에 맞게 필터
     ### Returns:
       - md(str): 경보 단계 + 발효일 + 요약 마크다운. 종합 판단은 호출자 LLM
     """
     alert = _fetch_mofa_alert(country)
-    return _render_alert_md(country, alert)
+    status = _render_alert_md(country, alert)
+    city_key = resolve_city_key(country, city) if city else None
+    local_tips = _render_local_tips_md(_STATIC[country], compact=True, city_key=city_key)
+    return f"{status}\n\n{local_tips}" if local_tips else status
 
 
 @tool(annotations={"title": "Exchange Rate", "openWorldHint": True, **_READONLY})
@@ -180,7 +192,7 @@ def get_exchange_rate(country: SupportedCountry) -> str:
     double-exchange guidance.
 
     - 해당 국가 통화의 현재 원화 매매기준율을 반환하는 함수
-      수출입은행 미고시 통화(베트남 동·필리핀 페소·대만 달러)는 USD 기준 + 이중환전 안내로 대체.
+      수출입은행 미고시 통화(베트남 동·필리핀 페소·대만 달러)는 USD 기준 참고값으로 대체.
     ### Args:
       - country(SupportedCountry): 국가 코드
     ### Returns:
@@ -361,8 +373,11 @@ def compose_checklist(
         visa_txt = f"무비자 {_days}일" if _days else "무비자"
     lines.append("## 📋 요약")
     lines.append(f"- **비자**: {visa_txt}")
+    # 현재상황 툴과 같은 기준(전국) 으로 요약 — 일부 지역 여행금지를 국가 전체로 오인하지 않게.
+    adv_lvl, adv_name, adv_regional = _advisory_summary(alert)
     if alert.get("ok", True):
-        lines.append(f"- **여행경보**: {alert['level_name']} (레벨 {alert['level']}, 발효 {alert['issued_at']})")
+        regional = " · 지역별 상이 — 목적지 확인" if adv_regional else ""
+        lines.append(f"- **여행경보**: {adv_name} (발효 {alert['issued_at']}{regional})")
     else:
         lines.append(f"- **여행경보**: ⚪ {alert['level_name']} — 0404.go.kr 에서 직접 확인 필요")
     if exch:
@@ -381,17 +396,23 @@ def compose_checklist(
             lines.append(f"- {t}")
         lines.append("")
 
+    local_tips = _render_local_tips_md(static)
+    if local_tips:
+        lines.extend([local_tips, ""])
+
     # D-day 체크리스트
     lines.append("## 🗓 D-day 체크리스트")
     lines.append("- **D-14 이전**: 여권 유효기간 6개월 이상 확인, 항공권 예약")
     lines.append("- **D-7**: 숙소·주요 예약 확정, 여행자보험, 데이터 로밍/유심")
-    lines.append("- **D-3**: 환전(공항보다 시내 사설 환전소가 유리한 경우 있음)")
+    lines.append("- **D-3**: 환전 — 현금 결제가 많은 국가는 출발 전 환전 권장")
     lines.append("- **D-1**: 여권·항공권·숙소 바우처 캡처, 짐 최종 확인")
     lines.append("- **출국일**: 공항 2시간 전 도착, 액체류 100ml 규정")
     lines.append("")
 
-    if alert["level"] >= 2:
-        lines.append(f"> ⚠️ 여행경보 {alert['level_name']} — 방문 전 외교부(0404.go.kr) 상세 안내 필독")
+    if adv_lvl >= 2:
+        lines.append(f"> ⚠️ 여행경보 {adv_name} — 방문 전 외교부(0404.go.kr) 상세 안내 필독")
+    elif adv_regional:
+        lines.append("> ⚠️ 일부 지역 경보 있음 — 방문 지역의 단계를 외교부(0404.go.kr)에서 확인")
     lines.append("> 참고용. 실시간 정보는 각 공식 사이트에서 재확인하세요.")
     return "\n".join(lines)
 

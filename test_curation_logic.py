@@ -22,6 +22,9 @@ from tb_helpers import (
     _pick_spots_for_purpose,
     _map_link,
     _render_alert_md,
+    _render_briefing_md,
+    _render_local_tips_md,
+    _render_local_tips_summary,
     _render_city_guide_md,
     _render_cost_md,
     _render_country_traits_md,
@@ -221,6 +224,113 @@ class CurationLogicTest(unittest.TestCase):
             alert = tb_api._fetch_mofa_alert("JP")
         self.assertFalse(alert["ok"])
         self.assertEqual(alert["level"], 0)
+
+    def test_advisory_breaks_down_by_region_not_country_max(self) -> None:
+        """일부 지역만 여행금지인 나라를 '여행금지'로 단정하면 안전한 도시를 물은 사람이 겁먹는다.
+        서버는 안전/위험을 단정하지 않고 전국 기준 + 지역별 단계 + 범례만 사실로 전달한다."""
+        item = {  # 필리핀 형태 — 남부만 여행금지(일부), 세부는 여행유의
+            "ban_yn_partial": "Y", "ban_note": "민다나오 잠보앙가, 술루 군도",
+            "attention_partial": "Y", "attention_note": "보라카이, 세부막탄섬",
+            "wrt_dt": "2026-07-01",
+        }
+        parsed = tb_api._parse_warning_item(item)
+        parsed["ok"] = True
+        md = _render_alert_md("PH", parsed)
+        # 헤드라인이 국가 전체를 '여행금지'로 단정하지 않는다
+        self.assertIn("전국 일반**: 미발령", md)
+        self.assertIn("지역마다 다르니", md)
+        # 지역별 단계와 범례(각 단계 뜻)를 함께 준다
+        self.assertIn("⛔ **여행금지**: 민다나오", md)
+        self.assertIn("🟡 **여행유의**: 보라카이, 세부막탄섬", md)
+        self.assertIn("여행금지(방문 금지)", md)  # 단계 설명 범례
+
+    def test_briefing_answers_what_to_pack(self) -> None:
+        """'준비물 뭐 있어?' 에 팩트만이 아니라 챙길 것(어댑터·환전)을 함께 준다."""
+        md = _render_briefing_md(
+            "ID", _STATIC["ID"],
+            {"required": True, "duration_days": 30, "note": "VOA/e-VOA 사전 발급"}, {},
+        )
+        self.assertIn("🎒 챙길 것", md)
+        self.assertIn("어댑터", md)
+        self.assertIn("ATM", md)  # 환전을 준비 사항으로 안내
+        self.assertIn("비자", md)
+
+    def test_briefing_surfaces_mandatory_entry_declarations(self) -> None:
+        """입국신고(TWAC·eTravel·All Indonesia)는 탑승거부급 필수라 브리핑에 노출돼야 한다."""
+        for cc, keyword in {"TW": "TWAC", "PH": "eTravel", "ID": "All Indonesia"}.items():
+            with self.subTest(country=cc):
+                md = _render_briefing_md(cc, _STATIC[cc], _STATIC[cc]["visa_static"], {})
+                self.assertIn("출발 전 확인", md)
+                self.assertIn(keyword, md)
+        # 발리 관광세도 출발 전 필수 비용
+        self.assertIn("관광세", _render_briefing_md(
+            "ID", _STATIC["ID"], _STATIC["ID"]["visa_static"], {}))
+
+    def test_checklist_advisory_uses_nationwide_not_country_max(self) -> None:
+        """체크리스트 경보 요약도 현재상황 툴과 같은 전국 기준을 써야 툴 간 판단이 일치한다.
+        일부 지역만 여행금지인 필리핀을 국가 전체 여행금지로 요약하면 안 된다 (v4 P0-3)."""
+        import travel_briefing_mcp as server
+        ph_alert = tb_api._parse_warning_item({
+            "ban_yn_partial": "Y", "ban_note": "민다나오 술루",
+            "attention_partial": "Y", "attention_note": "세부막탄",
+        })
+        ph_alert["ok"] = True
+        with patch.object(server, "_fetch_mofa_visa",
+                          return_value={"visa": {"required": False, "duration_days": 30}}), \
+             patch.object(server, "_fetch_mofa_alert", return_value=ph_alert), \
+             patch.object(server, "get_exchange_for_country", return_value=None):
+            md = server.compose_checklist("PH", month=8, nights=3)
+        self.assertIn("미발령", md)          # 전국 기준
+        self.assertIn("지역별 상이", md)       # 일부 지역 경보 안내
+        self.assertNotIn("(레벨 4", md)        # 국가 전체 여행금지 단정 금지
+        self.assertNotIn("사설 환전소", md)    # 특정 환전소를 권하지 않는다 (v4 P0-4)
+
+    def test_every_country_has_structured_local_tips(self) -> None:
+        """준비물·현지상황 질문이 어느 지원 국가에서도 구체적 행동 요령을 반환한다."""
+        allowed_cat = {"safety", "health", "culture", "transport",
+                       "payment", "weather", "connectivity"}
+        for country, static in _STATIC.items():
+            with self.subTest(country=country):
+                tips = static.get("local_tips", [])
+                self.assertGreaterEqual(len(tips), 5)
+                self.assertTrue(all(t.get("title") and len(t.get("details", [])) >= 2 for t in tips))
+                # 팁마다 카테고리(질문별 노출·요약 선별용) 가 있고 허용 값이어야 한다 (v4 P2)
+                self.assertTrue(all(t.get("category") in allowed_cat for t in tips))
+                md = _render_local_tips_md(static)
+                self.assertIn(static.get("local_tips_title", static["name_ko"]), md)
+                self.assertIn("공식 최신 정보", md)
+
+    def test_itinerary_carries_core_local_tips(self) -> None:
+        """'준비물+일정'을 일정 툴 하나로 물어도 핵심 현지 팁이 카테고리 다양하게 실린다 (v4 P1)."""
+        summary = _render_local_tips_summary(_STATIC["TH"])
+        self.assertIn("## 🧳 핵심 현지 팁", summary)
+        titles = {t["title"] for t in _STATIC["TH"]["local_tips"]}
+        shown = [l for l in summary if l.startswith("- **")]
+        self.assertGreaterEqual(len(shown), 2)
+        self.assertTrue(any(title in "\n".join(shown) for title in titles))
+        # 카테고리 중복 없이 다양하게 뽑힌다
+        cats = [t["category"] for t in _STATIC["TH"]["local_tips"]
+                if any(t["title"] in s for s in shown)]
+        self.assertEqual(len(cats), len(set(cats)))
+
+    def test_bali_tips_preserve_cultural_context_and_actions(self) -> None:
+        md = _render_local_tips_md(_STATIC["ID"])
+        for expected in ("Canang Sari", "오른손", "Grab", "생수", "우비"):
+            self.assertIn(expected, md)
+        self.assertNotIn("환전소", md)  # 현지 환전 안내는 넣지 않는다
+        compact = _render_local_tips_md(_STATIC["ID"], compact=True)
+        self.assertLess(len(compact), len(md))
+
+    def test_city_scoped_tips_are_filtered_by_destination(self) -> None:
+        """발리 전용 팁(차낭 사리)은 자카르타·족자 질문에 노출되면 안 된다 (v4 P0-2 도시 범위)."""
+        id_static = _STATIC["ID"]
+        bali = _render_local_tips_md(id_static, city_key="bali")
+        jakarta = _render_local_tips_md(id_static, city_key="jakarta")
+        nofilter = _render_local_tips_md(id_static)
+        self.assertIn("Canang Sari", bali)
+        self.assertNotIn("Canang Sari", jakarta)  # 도시가 다르면 필터
+        self.assertIn("Canang Sari", nofilter)    # 도시 미지정은 국가 전반 보기
+        self.assertIn("오른손", jakarta)          # 전국 공통 팁은 어느 도시에서도 유지
 
     def test_estimated_dates_are_not_shown_as_confirmed(self) -> None:
         """날짜 미입력 시 구체적 날짜를 노출하면 호스트 LLM 이 확정 일정으로 옮긴다 (QA v2 P0-3)."""

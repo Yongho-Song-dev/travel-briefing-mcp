@@ -14,7 +14,7 @@ import re
 from tb_config import (
     _STATIC, _SEASON_RULES, _COUNTRY_FILTER_KW, _DOMESTIC_KW,
     _PURPOSE_KO, _PURPOSE_ANGLE, _PURPOSE_PLAN, _PURPOSE_REASON, _PLAN_TIMING,
-    _CITY_FOOD, _CITY_DAILY_COST, _QUERY_VOCAB,
+    _CITY_FOOD, _CITY_DAILY_COST, _QUERY_VOCAB, _LEVEL_NAME,
     city_meta, today_kst,
 )
 
@@ -319,35 +319,179 @@ def _build_skyscanner_link(country: str, depart_date: str, return_date: str) -> 
 # ===========================================================================
 # 2) 마크다운 렌더러 (result 는 정제 마크다운 — 가이드 준수)
 # ===========================================================================
+# 일정 응답에 얹을 핵심 팁의 카테고리 우선순위 (안전·건강을 위로, 다양성 확보)
+_TIP_SUMMARY_PRIORITY = ("safety", "health", "culture", "transport", "payment", "weather", "connectivity")
+
+
+def _render_local_tips_summary(
+    static: dict, max_n: int = 3, city_key: Optional[str] = None,
+) -> list[str]:
+    """
+    - 상세 현지 팁에서 카테고리가 겹치지 않게 핵심 몇 개만 요약하는 함수
+      '준비물+일정'을 한 번에 물어 recommend_itinerary 만 호출돼도 핵심 현지 팁이
+      빠지지 않도록, 전체 반복 대신 카테고리별 대표 팁만 짧게 얹는다.
+    ### Args:
+      - static(dict): _STATIC[country]
+      - max_n(int): 최대 노출 개수
+      - city_key(Optional[str]): 도시 지정 시 도시 전용 팁 필터
+    ### Returns:
+      - lines(list[str]): 마크다운 라인 (팁 없으면 빈 리스트)
+    """
+    tips = [t for t in static.get("local_tips", [])
+            if isinstance(t, dict) and t.get("title") and _tip_in_scope(t, city_key)]
+    if not tips:
+        return []
+    picked: list[dict] = []
+    seen: set[str] = set()
+    for cat in _TIP_SUMMARY_PRIORITY:          # 카테고리 다양성 우선
+        hit = next((t for t in tips if t.get("category") == cat and cat not in seen), None)
+        if hit:
+            picked.append(hit)
+            seen.add(cat)
+        if len(picked) >= max_n:
+            break
+    for t in tips:                              # 부족하면 순서대로 채움
+        if len(picked) >= max_n:
+            break
+        if t not in picked:
+            picked.append(t)
+
+    lines = ["## 🧳 핵심 현지 팁"]
+    for t in picked[:max_n]:
+        action = t["details"][-1] if t.get("details") else ""
+        lines.append(f"- **{t['title']}** — {action}" if action else f"- **{t['title']}**")
+    lines.append("> 전체 현지 팁·예절은 준비물 안내(get_trip_briefing)에서 확인하세요.")
+    lines.append("")
+    return lines
+
+
+def _tip_in_scope(tip: object, city_key: Optional[str]) -> bool:
+    """도시 전용 팁(scope.cities)은 해당 도시일 때만 노출한다.
+
+    발리 전용 차낭 사리 팁이 자카르타·족자 질문에 나오면 안 된다. 도시가 특정되지
+    않았으면(country-only) 필터하지 않고 국가 전반 팁으로 모두 보여준다.
+    """
+    if not isinstance(tip, dict):
+        return True
+    scope = tip.get("scope") or {}
+    cities = scope.get("cities")
+    if not cities:                 # 전국 공통 팁
+        return True
+    if city_key is None:           # 도시 미지정 → 국가 전반 보기(필터 안 함)
+        return True
+    return city_key in cities
+
+
+def _render_local_tips_md(
+    static: dict, *, compact: bool = False, city_key: Optional[str] = None,
+) -> str:
+    """국가별 문화·안전·교통·결제 팁을 일관된 마크다운으로 렌더링한다.
+
+    ``travel_tips`` 는 전자입국카드처럼 출발 전에 처리할 짧은 준비 항목이고,
+    ``local_tips`` 는 현지에서 왜 조심해야 하는지와 실제 행동을 함께 설명한다.
+    compact=True 이면 현재상황 응답이 너무 길어지지 않도록 행동 요령만 보여준다.
+    city_key 를 주면 그 도시에 해당하는 팁만 필터한다(도시 전용 scope 팁 제어).
+    """
+    tips = [t for t in static.get("local_tips", []) if _tip_in_scope(t, city_key)]
+    if not tips:
+        return ""
+
+    heading = static.get("local_tips_title") or f"{static.get('name_ko', '')} 현지 Tip"
+    lines = [f"## 🧭 {heading}", ""]
+    for index, tip in enumerate(tips, 1):
+        if isinstance(tip, str):
+            lines.append(f"{index}. {tip}")
+            continue
+
+        lines.append(f"{index}. **{tip.get('title', '현지 유의사항')}**")
+        details = tip.get("details", [])
+        if compact and details:
+            details = details[-1:]
+        for detail in details:
+            lines.append(f"   - {detail}")
+
+    reviewed = static.get("local_tips_last_reviewed")
+    suffix = f" ({reviewed} 검토)" if reviewed else ""
+    lines += ["", f"> 지역·시설별 차이가 있고 규정은 바뀔 수 있습니다{suffix}. 현장 안내와 공식 최신 정보를 우선하세요."]
+    return "\n".join(lines)
+
+
+def _advisory_summary(alert: dict) -> tuple[int, str, bool]:
+    """
+    - 요약용 경보 단계를 전국(비-일부) 기준으로 계산하는 함수
+      일부 지역만 여행금지인 나라를 국가 전체 '여행금지'로 오인하지 않게 한다.
+    ### Returns:
+      - (level, name, has_regional): 전국 레벨, 단계명, 지역별 상이 여부
+    """
+    regions = alert.get("regions") or []
+    if not regions:
+        return alert.get("level", 0), alert.get("level_name", "정보 없음"), False
+    nationwide = max((r["level"] for r in regions if not r["partial"]), default=0)
+    has_regional = any(r["level"] > nationwide or r["partial"] for r in regions)
+    return nationwide, _LEVEL_NAME.get(nationwide, "미발령"), has_regional
+
+
 def _render_alert_md(country: str, alert: dict) -> str:
     """
-    - 외교부 여행경보 결과를 정제 마크다운으로 렌더링하는 함수
+    - 외교부 여행경보를 '전국 기준 + 지역별 단계'로 정제 렌더링하는 함수
+      단일 '국가 최고 레벨' 헤드라인은 오해를 부른다 — 남부 일부만 여행금지인 나라를
+      "여행금지"로 단정하면 안전한 도시를 물은 사용자가 겁먹는다. 그래서 서버는 안전/위험을
+      단정하지 않고, 전국 기준 단계 + 지역별 단계 분해 + 단계 설명(범례)만 사실로 전달한다.
     ### Args:
       - country(str): 국가 코드
-      - alert(dict): _fetch_mofa_alert 결과
+      - alert(dict): _fetch_mofa_alert 결과 (regions 있으면 지역별 분해)
     ### Returns:
-      - md(str): 경보 단계·발효일·요약 마크다운
+      - md(str): 여행경보 현황 마크다운
     """
     s = _STATIC[country]
+    name = s["name_ko"]
     ok = alert.get("ok", True)
+    issued = alert.get("issued_at", "-")
+    tail = "> 상세 안내는 외교부 해외안전여행([0404.go.kr](https://www.0404.go.kr)) 확인."
+
     # 조회 실패를 🟢(안전 확인됨)으로 보이면 안 된다 — 실패는 레벨이 아니라 상태 미확인이다
-    icon = _ALERT_ICON.get(alert["level"], "⚪") if ok else "⚪"
-    note_line = f"\n**요약**: {alert['note']}" if alert.get("note") and alert["note"] not in ("-", "") else ""
-    level_line = (f"{icon} **경보 단계**: {alert['level_name']} (레벨 {alert['level']})"
-                  if ok else
-                  f"{icon} **경보 단계**: {alert['level_name']} — 외교부 실시간 조회에 실패했습니다")
-    return (
-        f"# {s['name_ko']} 현재 안전 상황\n\n"
-        f"{level_line}\n"
-        f"**발효일**: {alert['issued_at']}{note_line}\n\n"
-        f"> 상세 안내는 외교부 해외안전여행([0404.go.kr](https://www.0404.go.kr)) 확인."
-    )
+    if not ok:
+        note = alert.get("note") or "출발 전 0404.go.kr 재확인"
+        return (f"# {name} 여행경보 현황\n\n"
+                f"⚪ **경보 단계**: {alert.get('level_name', '정보 없음')} — 외교부 실시간 조회에 실패했습니다\n"
+                f"**요약**: {note}\n\n{tail}")
+
+    lines = [f"# {name} 여행경보 현황", ""]
+    regions = alert.get("regions") or []
+
+    if not regions:
+        # 지역 데이터가 없으면(미발령·간이 dict) 전국 단계만 사실로
+        lvl = alert.get("level", 0)
+        lines.append(f"{_ALERT_ICON.get(lvl, '⚪')} **경보 단계**: {alert.get('level_name', '미발령')}")
+        if alert.get("note") and alert["note"] not in ("-", ""):
+            lines.append(f"**요약**: {alert['note']}")
+    else:
+        # 전국(비-일부) 최고 단계를 기준으로, 지역별로 다르면 목적지 확인을 유도
+        nationwide = max((r["level"] for r in regions if not r["partial"]), default=0)
+        base = "전국" if nationwide > 0 else "전국 일반"
+        head = f"{_ALERT_ICON.get(nationwide, '🟢')} **{base}**: {_LEVEL_NAME.get(nationwide, '미발령')}"
+        if any(r["level"] > nationwide or r["partial"] for r in regions):
+            head += " — 지역마다 다르니 목적지를 아래에서 확인하세요"
+        lines.append(head)
+        lines += ["", "**지역별 단계**"]
+        for lvl in (4, 3, 2, 1):
+            regs = [r for r in regions if r["level"] == lvl]
+            if not regs:
+                continue
+            texts = " · ".join(r["region"] for r in regs if r["region"])
+            lines.append(f"- {_ALERT_ICON[lvl]} **{_LEVEL_NAME.get(lvl)}**{f': {texts}' if texts else ''}")
+        lines += ["", "> 단계: 여행유의(신변안전 유의) < 여행자제(불필요 여행 자제) "
+                  "< 출국권고(가급적 출국) < 여행금지(방문 금지)"]
+
+    lines.append(f"**발효일**: {issued}")
+    lines.append(tail)
+    return "\n".join(lines)
 
 
 def _exchange_line(exch: dict) -> Optional[str]:
     """
     - 환율 조회 결과를 한 줄 요약으로 만드는 함수 (체크리스트·일정추천 요약용)
-      미고시 통화는 USD 기준으로 이중환전 안내.
+      미고시 통화는 USD 기준값만 참고로 제공(현지 환전 안내는 하지 않음).
     ### Args:
       - exch(dict): get_exchange_for_country 결과
     ### Returns:
@@ -369,7 +513,7 @@ def _exchange_line(exch: dict) -> Optional[str]:
 def _render_exchange_md(static: dict, exch: dict) -> str:
     """
     - 환율 조회 결과를 정제 마크다운으로 렌더링하는 함수
-      수출입은행 미고시 통화(VND/PHP/TWD)는 USD 기준 + 이중환전 팁으로 대체.
+      수출입은행 미고시 통화(VND/PHP/TWD)는 USD 기준 참고값 + ATM 안내로 대체.
     ### Args:
       - static(dict): 국가 정적 정보
       - exch(dict): get_exchange_for_country 결과
@@ -384,11 +528,9 @@ def _render_exchange_md(static: dict, exch: dict) -> str:
             return header + "\n> 환율 조회 실패. 잠시 후 다시 시도해주세요."
         return (
             f"{header}\n"
-            f"**{exch['currency']}** 는 한국수출입은행 고시 대상이 아닙니다.\n"
-            f"**USD 1달러** = 약 **{usd['deal_bas_r']:,.2f} 원** ({usd['search_date']} 기준 매매기준율)\n\n"
-            f"**💡 환전 팁**: 한국에서 미국 달러로 환전 후 현지에서 {exch['currency']} 로 재환전하는 방식이 "
-            f"일반적으로 유리합니다. 공항보다 시내 사설 환전소 환율이 좋은 편입니다.\n\n"
-            f"> 실거래 환율은 은행·환전소별로 상이. 참고용."
+            f"**{exch['currency']}** 는 한국수출입은행 고시 대상이 아니라 원화 직접 환산이 없습니다.\n"
+            f"**USD 1달러** = 약 **{usd['deal_bas_r']:,.2f} 원** (참고용 · {exch['currency']} 환율은 아님)\n\n"
+            f"> 해외 출금 가능 카드로 현지 ATM 출금이 편리합니다. 참고용."
         )
 
     result = exch.get("rate")
@@ -411,7 +553,9 @@ def _render_exchange_md(static: dict, exch: dict) -> str:
     )
 
 
-def _render_briefing_md(country: str, static: dict, visa: dict, embassy: dict) -> str:
+def _render_briefing_md(
+    country: str, static: dict, visa: dict, embassy: dict, city_key: Optional[str] = None,
+) -> str:
     """
     - 정적 정보 + 동적 비자 + 대사관을 정제된 마크다운으로 렌더링하는 함수
     ### Args:
@@ -442,7 +586,24 @@ def _render_briefing_md(country: str, static: dict, visa: dict, embassy: dict) -
             f"- 긴급(사건·사고): {embassy.get('emergency', '-')}\n"
         )
 
-    return (
+    # "뭐 챙겨야 해?" 질문에 팩트만이 아니라 행동으로 답하는 준비 팁 (한국=220V·C/F 기준)
+    elec = ("한국 플러그 일부 호환 — 멀티 어댑터 있으면 안전"
+            if {"C", "F"} & set(s["plug"]) else "한국과 다른 플러그 — 멀티 어댑터 필요")
+    if not (s["voltage"].startswith("22") or s["voltage"].startswith("23")):
+        elec += f", 220V 기기는 변압기 확인({s['voltage']})"
+    prep_lines = [
+        f"- 🔌 전기: {elec}",
+        f"- 💵 현금: 출발 전 환전 또는 해외 출금 가능 카드로 현지 ATM 출금",
+    ]
+    if visa.get("required"):
+        prep_lines.insert(0, "- 🛂 비자: 출발 전 사전 발급(도착비자·e-VISA 등) 필요")
+    prep_block = "\n**🎒 챙길 것**\n" + "\n".join(prep_lines) + "\n"
+
+    # 입국신고(TWAC·eTravel·All Indonesia 등)·결제앱은 출발 전 해야 할 일 — 브리핑에도 노출한다.
+    tips = s.get("travel_tips", [])
+    tips_block = ("\n**✈️ 출발 전 확인**\n" + "\n".join(f"- {t}" for t in tips) + "\n") if tips else ""
+
+    briefing = (
         f"# {s['name_ko']}({s['name_en']}) 여행 브리핑\n\n"
         f"**🛂 비자**: {visa_line} — {note}\n"
         f"**🔌 전압/플러그**: {s['voltage']} / {plugs} 타입\n"
@@ -450,9 +611,13 @@ def _render_briefing_md(country: str, static: dict, visa: dict, embassy: dict) -
         f"**💱 통화**: {s['currency']}\n"
         f"**📞 긴급**: " + ", ".join(f"{k} {v}" for k, v in s['emergency'].items()) + "\n"
         f"**💁 팁 문화**: {s['tipping']}\n"
+        f"{tips_block}"
+        f"{prep_block}"
         f"{embassy_block}\n"
         f"> 참고용. 출발 전 외교부 해외안전여행(0404.go.kr) 공식 안내를 반드시 확인하세요."
     )
+    local_tips = _render_local_tips_md(s, city_key=city_key)
+    return f"{briefing}\n\n{local_tips}" if local_tips else briefing
 
 
 def _render_flight_md(country: str, season: dict, depart: str, ret: str, link: str) -> str:
@@ -1199,12 +1364,16 @@ def _render_essentials_md(
 
     if alert:
         ok = alert.get("ok", True)
-        icon = _ALERT_ICON.get(alert.get("level", 0), "⚪") if ok else "⚪"
-        line = f"- {icon} **안전**: {alert.get('level_name', '정보 없음')}"
+        lvl, name, has_regional = _advisory_summary(alert)
+        icon = _ALERT_ICON.get(lvl, "⚪") if ok else "⚪"
+        line = f"- {icon} **안전**: {name}"
         if not ok:
             line += " — 외교부 해외안전여행(0404.go.kr)에서 직접 확인하세요"
-        elif alert.get("level", 0) >= 2:
-            line += " — 방문 전 외교부(0404.go.kr) 확인 권장"
+        else:
+            if has_regional:
+                line += " (지역별 상이 — 목적지 확인)"
+            if lvl >= 2:
+                line += " — 방문 전 외교부(0404.go.kr) 확인 권장"
         items.append(line)
 
     if exch:
@@ -1308,7 +1477,11 @@ def _prep_summary_line(
             parts.append(f"무비자{f' {days}일' if days else ''}")
     if alert:
         ok = alert.get("ok", True)
-        parts.append(f"안전 {alert.get('level_name', '정보 없음')}" if ok else "안전 확인 필요")
+        if ok:
+            _, name, _ = _advisory_summary(alert)
+            parts.append(f"안전 {name}")
+        else:
+            parts.append("안전 확인 필요")
     emerg = _STATIC.get(country or "", {}).get("emergency", {})
     nums = "·".join(
         x for x in (
@@ -1524,6 +1697,9 @@ def _render_itinerary_md(
 
     # 국가·도시 특징 (결제 수단·복장·비자 등 나라별 색깔)
     lines.extend(_render_country_traits_md(country, city, depart_month, basis))
+
+    # 핵심 현지 팁 요약 — '준비물+일정'을 일정 툴 하나로 물어도 현지 팁이 빠지지 않게
+    lines.extend(_render_local_tips_summary(_STATIC.get(country, {}), city_key=city))
 
     if not posts:
         lines.append("> 블로그 검색 결과가 없습니다. 네이버 API 키를 확인하거나 잠시 후 다시 시도해주세요.")

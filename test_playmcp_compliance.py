@@ -46,6 +46,16 @@ class PlayMCPComplianceTest(unittest.TestCase):
                 for marker in ("###", "Args:", "Returns:"):
                     self.assertNotIn(marker, description)
 
+    def test_local_tip_queries_are_routed_to_enriched_tools(self) -> None:
+        """호스트 LLM 이 준비물·현지상황 질문에서 국가별 팁을 가진 툴을 선택해야 한다."""
+        descriptions = {tool.name: tool.description or "" for tool in self.tools}
+        briefing = descriptions["get_trip_briefing"].lower()
+        status = descriptions["get_current_status"].lower()
+        for keyword in ("packing", "local customs", "country-specific tips"):
+            self.assertIn(keyword, briefing)
+        self.assertIn("local safety", status)
+        self.assertIn("etiquette tips", status)
+
     def test_required_tool_metadata(self) -> None:
         annotation_fields = {
             "title",
