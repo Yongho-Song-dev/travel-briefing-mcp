@@ -51,7 +51,7 @@ from tb_helpers import (
     _exchange_line, resolve_trip_dates,
     _render_alert_md, _render_exchange_md, _render_briefing_md,
     _render_flight_md, _render_destinations_md, _render_city_guide_md,
-    _render_itinerary_md, _trip_period_label,
+    _render_itinerary_md, _trip_period_label, _render_season_advice_md,
 )
 from tb_scheduler import start_warming
 
@@ -218,6 +218,11 @@ def get_flight_season_guide(
     season = _judge_season(country, dep)
     link = _build_skyscanner_link(country, dep, ret)
     md = _render_flight_md(country, season, dep, ret, link)
+    # "8월에 가면 어때?" 류 적합성 질문의 답. 월을 확실히 받는 이 툴에 월별 날씨 판단을
+    # 얹어, 일정 툴에 month 가 전달되지 않아도 폭염·태풍 등 판단이 빠지지 않게 한다.
+    advice = _render_season_advice_md(country, d["depart"].month, d["basis"])
+    if advice:
+        md += "\n" + "\n".join(advice)
     if d["estimated"]:
         md += "\n> 📅 날짜를 지정하면 더 정확한 안내가 가능합니다."
     return md

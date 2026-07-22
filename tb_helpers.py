@@ -71,8 +71,8 @@ def _transit_hint(prev: Optional[dict], cur: dict) -> str:
     if not a1 or not a2:
         return ""
     if a1 == a2:
-        return f"{a1} 구역 내 도보 이동권"
-    return f"{a1}→{a2} 대중교통(구글맵 경로검색 권장)"
+        return f"{a1} 구역 내 도보"
+    return f"{a1}→{a2} 대중교통"
 
 
 # ===========================================================================
@@ -362,8 +362,8 @@ def _exchange_line(exch: dict) -> Optional[str]:
     usd = exch.get("usd")
     if not usd:
         return None
-    return (f"{exch['currency']} 는 수출입은행 미고시 — USD 1달러 = 약 "
-            f"{usd['deal_bas_r']:,.2f} 원 (현지에서 달러→현지통화 환전 권장)")
+    return (f"{exch['currency']} 는 수출입은행 미고시 | USD 1달러 = 약 "
+            f"{usd['deal_bas_r']:,.2f} 원 (해외 출금 가능 카드로 현지 ATM 출금 가능)")
 
 
 def _render_exchange_md(static: dict, exch: dict) -> str:
@@ -915,31 +915,27 @@ def _render_day_plan_md(
     mentions = mentions or {}
     price_note = _meal_price_note(country, city_key)
 
-    def _why(spot: dict) -> str:
-        parts = []
+    def _extras(spot: dict) -> list[str]:
+        # 부연(추천 이유·후기)은 본문 뒤 ' | ' 로 뺀다 — 제목·설명 가독성 우선.
+        out = []
         r = reasons.get(spot.get("category", ""))
         if r:
-            parts.append(r)
+            out.append(r)
         n = mentions.get(spot["name_ko"], 0)
         if n >= 2:
-            parts.append(f"최근 후기 {n}건 언급")
-        return (" · " + " · ".join(parts)) if parts else ""
+            out.append(f"후기 {n}건")
+        return out
 
     def _activity(spot: dict, prev: Optional[dict], lead: str = "") -> str:
+        # 형식: - [이름](링크): 설명 (타이밍·이동) | 추천 이유, 후기
+        #   이동은 화살표(→), 절 연결은 쉼표(,), 부연은 괄호, 괄호가 차면 파이프(|).
         link = _map_link(country, spot["search_query"])
         _, tnote = _time_signal(spot)
-        notes = [n for n in (lead, tnote) if n]
-        note_str = (" · " + " · ".join(notes)) if notes else ""
-        meta = []
-        dwell = _dwell_hint(spot)
-        if dwell:
-            meta.append(dwell)
-        transit = _transit_hint(prev, spot)
-        if transit:
-            meta.append(transit)
+        meta = [m for m in (lead, tnote, _dwell_hint(spot), _transit_hint(prev, spot)) if m]
         meta_str = f" ({', '.join(meta)})" if meta else ""
-        return (f"- [{spot['name_ko']}]({link}) — "
-                f"{spot['one_liner']}{_why(spot)}{note_str}{meta_str}")
+        extras = _extras(spot)
+        extras_str = f" | {', '.join(extras)}" if extras else ""
+        return f"- [{spot['name_ko']}]({link}): {spot['one_liner']}{meta_str}{extras_str}"
 
     meal_index = [0]
 
@@ -952,7 +948,7 @@ def _render_day_plan_md(
             if m not in menus:
                 menus.append(m)
         suffix = f" ({price_note})" if price_note else ""
-        return f"- 추천 식사: {' · '.join(menus)}{suffix}"
+        return f"- 추천 식사: {' / '.join(menus)}{suffix}"
 
     purpose_ko = _PURPOSE_KO.get(purpose, "") if purpose else ""
     head = f"## 🗓 {nights}박{days}일 코스 제안 ({city_ko}"
@@ -966,7 +962,7 @@ def _render_day_plan_md(
     for day in range(days):
         first, last = day == 0, day == days - 1
         label = "도착 · 시내 적응" if first else ("여유롭게 마무리 · 귀국" if last else "핵심 관광")
-        lines.append(f"**Day {day + 1} · {label}**")
+        lines.append(f"**Day {day + 1}** ({label})")
 
         if day == day_trip_day and day_trip:
             lines.append(_activity(day_trip, None, lead="하루 종일"))
@@ -1008,8 +1004,8 @@ def _render_day_plan_md(
         lines.append(_meal_line(n_meals))
         lines.append("")
 
-    lines.append("> 체류·이동 시간은 여유 있게 잡은 추정치입니다. 실제 경로·소요는 구글맵 "
-                 "경로검색으로 확인하고, 표시된 시간보다 10~20분 여유를 두세요.")
+    lines.append("> 체류 시간은 여유 있게 잡은 추정치입니다. 이동 경로·소요 시간은 "
+                 "구글맵 경로검색으로 확인하세요.")
     lines.append("")
     return lines
 
@@ -1094,9 +1090,9 @@ def _render_cost_md(
     people_label = "커플 2인" if assumed_couple else f"{people}인"
     lines = [
         "## 💰 예상 현지 경비 — 항공·숙박·쇼핑 제외",
-        f"- 🔒 **필수 예산 요약**: {people_label} · 일반형 "
-        f"{local_money(daily_local * people)}/일 · {days}일 "
-        f"{local_money(daily_local * days * people)} · 항공·숙박·쇼핑 제외",
+        f"- 🔒 **필수 예산 요약**: {people_label} (일반형 "
+        f"{local_money(daily_local * people)}/일, {days}일 "
+        f"{local_money(daily_local * days * people)}, 항공·숙박·쇼핑 제외)",
         f"- 📌 **산정 기준**: 일반형 · 1인 하루 · {included} 포함",
         f"- 🧮 **1인 하루**: 절약형 {money(economy)} · 일반형 **{money(daily_local)}** · 여유형 {money(comfortable)}",
         f"- 📊 **일반형 내역**({currency}, 1인/일): {breakdown}",
@@ -1106,7 +1102,7 @@ def _render_cost_md(
     if assumed_couple:
         lines.append("- ℹ️ 커플여행이므로 인원 미입력 시 2명으로 계산했습니다")
     if not krw:
-        lines.append(f"- 💱 {currency} 는 수출입은행 미고시라 원화 환산은 현지 환전소 환율로 계산하세요")
+        lines.append(f"- 💱 {currency} 는 수출입은행 미고시라 원화 환산이 없습니다 (해외 출금 가능 카드로 현지 ATM 출금 가능)")
     lines.append("> 전망대·근교 이동·야간 활동을 추가하면 증가합니다. 항공·숙박은 날짜별 변동이 커 별도 계산해야 합니다.")
     lines.append("")
     return lines
@@ -1295,10 +1291,43 @@ def _render_season_advice_md(
     ]
 
 
+def _prep_summary_line(
+    visa: Optional[dict], alert: Optional[dict], country: Optional[str],
+) -> Optional[str]:
+    """비자·안전·긴급번호를 한 줄로 묶은 원자 준비 요약(압축 생존용).
+
+    '출발 전 필수' 블록은 호스트 LLM 이 통째로 버리기도 해서(단일 출처인 근교 도시일수록),
+    가장 잘 남는 상단 핵심 요약에 준비 정보를 한 줄로도 심어 둔다.
+    """
+    parts: list[str] = []
+    if visa:
+        if visa.get("required"):
+            parts.append("비자 사전 발급 필요")
+        else:
+            days = visa.get("duration_days")
+            parts.append(f"무비자{f' {days}일' if days else ''}")
+    if alert:
+        ok = alert.get("ok", True)
+        parts.append(f"안전 {alert.get('level_name', '정보 없음')}" if ok else "안전 확인 필요")
+    emerg = _STATIC.get(country or "", {}).get("emergency", {})
+    nums = "·".join(
+        x for x in (
+            f"경찰 {emerg.get('police')}" if emerg.get("police") else "",
+            f"구급 {emerg.get('ambulance')}" if emerg.get("ambulance") else "",
+        ) if x
+    )
+    if nums:
+        parts.append(f"긴급 {nums}")
+    if emerg:
+        parts.append("영사콜센터 +82-2-3210-0404")
+    return " | ".join(parts) if parts else None
+
+
 def _render_priority_summary_md(
     season_lines: list[str], day_plan_lines: list[str], cost_lines: list[str],
+    prep: Optional[str] = None,
 ) -> list[str]:
-    """작은 호스트 LLM이 앞부분만 사용해도 판단·예산·일정·식사가 함께 남는 요약."""
+    """작은 호스트 LLM이 앞부분만 사용해도 판단·준비·예산·일정·식사가 함께 남는 요약."""
     if not day_plan_lines and not cost_lines and not season_lines:
         return []
 
@@ -1311,6 +1340,9 @@ def _render_priority_summary_md(
     )
     if conclusion:
         lines.append(f"- **여행 판단**: {conclusion}")
+
+    if prep:
+        lines.append(f"- **준비**: {prep}")
 
     cost_summary = next(
         (line.split(": ", 1)[1] for line in cost_lines
@@ -1337,7 +1369,7 @@ def _render_priority_summary_md(
             if price:
                 current["price"] = price.group(1)
                 body = body[: body.rfind("(")]
-            for m in body.split("·"):
+            for m in body.split("/"):
                 m = m.strip()
                 if m and m not in current["meals"]:
                     current["meals"].append(m)
@@ -1350,16 +1382,16 @@ def _render_priority_summary_md(
     for day in days:
         spots = day["spots"][:3]
         meals = day["meals"][:2]
-        parts = []
+        if not spots and not meals:
+            continue
+        lines.append(f"- **Day {day['number']}**:")
         if spots:
-            parts.append(" · ".join(spots))
+            lines.append("  - 경로: " + " → ".join(spots))
         if meals:
-            meal_part = "식사 " + " / ".join(meals)
+            meal_line = "  - 추천 식사: " + " / ".join(meals)
             if day["price"]:
-                meal_part += f" — {day['price']}"
-            parts.append(meal_part)
-        if parts:
-            lines.append(f"- **Day {day['number']}**: " + " | ".join(parts))
+                meal_line += f" ({day['price']})"
+            lines.append(meal_line)
 
     lines.append("")
     return lines
@@ -1443,7 +1475,8 @@ def _render_itinerary_md(
             country, city, exch, nights, purpose, num_people,
         )
 
-    lines.extend(_render_priority_summary_md(season_lines, day_plan_lines, cost_lines))
+    prep = _prep_summary_line(visa, alert, country)
+    lines.extend(_render_priority_summary_md(season_lines, day_plan_lines, cost_lines, prep))
 
     # 출발 전 필수 요약 — 비자·안전·환율·시즌 (여행 질문 하나로 준비 전체가 보이도록)
     lines.extend(_render_essentials_md(exch, visa, alert, season, country))

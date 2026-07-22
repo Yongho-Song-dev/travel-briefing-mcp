@@ -30,6 +30,7 @@ from tb_helpers import (
     _render_essentials_md,
     _render_itinerary_md,
     _render_season_advice_md,
+    _prep_summary_line,
     _trip_period_label,
     resolve_city_key,
     resolve_trip_dates,
@@ -99,9 +100,10 @@ class CurationLogicTest(unittest.TestCase):
         # 시간대 슬롯 라벨은 전부 제거됐다
         for label in ("🌅 오전", "☀️ 오후", "🌆 늦은 오후", "🌙 저녁", "🍽 점심"):
             self.assertNotIn(label, md)
-        # 이동시간은 숫자로 단정하지 않는다 — 같은 구역은 도보권, 다른 구역은 구글맵 유도
-        self.assertIn("구역 내 도보 이동권", md)
-        self.assertIn("구글맵 경로검색 권장", md)
+        # 이동시간은 숫자로 단정하지 않는다 — 같은 구역은 도보, 다른 구역은 화살표+대중교통
+        self.assertIn("구역 내 도보", md)
+        self.assertRegex(md, r"→[^)]+대중교통")
+        self.assertIn("구글맵 경로검색", md)  # 이동 확인 안내는 마무리 문장에
         self.assertNotRegex(md, r"대중교통 약 \d+분")  # 조작된 고정 소요시간 금지
         self.assertNotRegex(md, r"구역 내 도보 약 \d+분")
         # 아침 시장(츠키지)은 '저녁 추천'으로 잘못 표기되지 않는다
@@ -427,8 +429,12 @@ class CurationLogicTest(unittest.TestCase):
         ):
             self.assertIn(value, summary)
         self.assertEqual(summary.count("**Day "), 5)
-        for line in (line for line in summary.splitlines() if line.startswith("- **Day ")):
-            self.assertIn("식사 ", line)
+        # 각 Day 는 경로(이동은 화살표) + 추천 식사(가격대)로 분리 — 가독성
+        self.assertEqual(summary.count("- 경로:"), 5)
+        self.assertIn("→", summary)
+        meal_lines = [l for l in summary.splitlines() if l.strip().startswith("- 추천 식사:")]
+        self.assertEqual(len(meal_lines), 5)
+        for line in meal_lines:
             self.assertRegex(line, r"1인 약 [\d,]+~[\d,]+ TWD")
 
     def test_city_meals_are_specific_varied_and_priced(self) -> None:
@@ -503,6 +509,28 @@ class CurationLogicTest(unittest.TestCase):
         for keyword in ("8월 여행 판단", "여행은 가능", "폭염", "태풍", "박물관·쇼핑몰"):
             self.assertIn(keyword, md)
         self.assertEqual(_render_season_advice_md("TW", 8, "none"), [])
+
+    def test_flight_guide_carries_month_suitability(self) -> None:
+        """'8월에 어때?' 는 항공 툴이 월을 확실히 받으므로, 여기에 월별 날씨 판단을 실어
+        일정 툴에 month 가 안 가도 폭염·태풍 판단이 빠지지 않게 한다."""
+        import travel_briefing_mcp as server
+        md = server.get_flight_season_guide("TW", month=8, nights=4)
+        for keyword in ("8월 여행 판단", "폭염", "태풍"):
+            self.assertIn(keyword, md)
+        # 월 단서가 없으면 판단을 붙이지 않는다
+        self.assertNotIn("여행 판단", server.get_flight_season_guide("TW"))
+
+    def test_priority_summary_carries_atomic_prep(self) -> None:
+        """'출발 전 필수' 블록을 호스트가 통째로 버려도, 상단 요약의 준비 한 줄로 비자·안전이 남는다."""
+        line = _prep_summary_line(
+            {"required": False, "duration_days": 90},
+            {"level": 0, "level_name": "미발령", "ok": True}, "TW",
+        )
+        for token in ("무비자 90일", "안전 미발령", "영사콜센터 +82-2-3210-0404"):
+            self.assertIn(token, line)
+        # 조회 실패 시 '안전 확인 필요' 로 정직하게
+        fail = _prep_summary_line(None, {"level": 0, "ok": False}, "TW")
+        self.assertIn("안전 확인 필요", fail)
 
     def test_dated_event_is_hedged_when_departure_is_unknown(self) -> None:
         """출발일 미정인데 특정일 행사를 확정 추천하면 여행 기간과 어긋난다 (QA v2 P0-3)."""
